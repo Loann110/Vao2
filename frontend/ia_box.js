@@ -20,7 +20,7 @@
     }
     function unwrapObject(payload, property) {
         if (!isRecord(payload))
-            throw new Error("Réponse JSON invalide");
+            throw new Error("Invalid JSON response");
         const nested = payload[property];
         return isRecord(nested) ? nested : payload;
     }
@@ -41,7 +41,7 @@
         const date = new Date(value);
         return Number.isNaN(date.getTime())
             ? ""
-            : new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(date);
+            : new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(date);
     }
     function stringItems(value) {
         return Array.isArray(value)
@@ -61,10 +61,10 @@
             signal: requestController?.signal,
         });
         if (!response.ok)
-            throw new Error(`Erreur backend ${response.status}`);
+            throw new Error(`Backend error ${response.status}`);
         const contentType = response.headers.get("content-type") || "";
         if (!contentType.includes("application/json")) {
-            throw new Error("Le backend doit retourner du JSON");
+            throw new Error("The backend must return JSON");
         }
         return response.json();
     }
@@ -102,7 +102,7 @@
                 .filter(Boolean)
                 .join(" · ")));
             row.append(text);
-            const link = externalLink(item.url, "Ouvrir");
+            const link = externalLink(item.url, "Open");
             if (link)
                 row.append(link);
             wrapper.append(row);
@@ -116,7 +116,7 @@
             const text = createNode("div");
             text.append(createNode("div", "ia_item_title", item.source || "Source"), createNode("div", "ia_item_meta", item.title || ""));
             row.append(text);
-            const link = externalLink(item.url, "Contenu original");
+            const link = externalLink(item.url, "Original content");
             if (link)
                 row.append(link);
             wrapper.append(row);
@@ -125,26 +125,26 @@
     }
     function panel(...children) {
         const page = createNode("div", "ia_page");
-        page.append(createNode("div", "ia_eyebrow", "Synthèse"), ...children);
+        page.append(createNode("div", "ia_eyebrow", "AI summary"), ...children);
         iaBox.replaceChildren(page);
     }
     /* The panel is never blank: with no selection it invites the next action. */
     function reset() {
         requestController?.abort();
         requestController = null;
-        panel(createNode("div", "ia_empty", "Choisis un article dans le feed pour afficher sa synthèse ici."));
+        panel(createNode("div", "ia_empty", "Select an article from the feed to display its summary here."));
     }
     function showLoading() {
         const loading = createNode("div", "ia_loading");
-        loading.append(createNode("div", "ia_loader"), createNode("div", "", "Génération de la synthèse en cours…"));
+        loading.append(createNode("div", "ia_loader"), createNode("div", "", "Generating summary…"));
         panel(loading);
     }
     function showError(message) {
-        panel(createNode("div", "ia_error", `Synthèse indisponible : ${message}`));
+        panel(createNode("div", "ia_error", `Summary unavailable: ${message}`));
     }
     function render(article, details) {
         const page = createNode("article", "ia_page");
-        page.append(createNode("div", "ia_eyebrow", "Synthèse"));
+        page.append(createNode("div", "ia_eyebrow", "AI summary"));
         const imageUrl = validBackendUrl(article.image_url);
         if (imageUrl) {
             const image = createNode("img", "ia_hero");
@@ -164,26 +164,26 @@
         if (article.category) {
             meta.append(createNode("span", "ia_category", article.category));
         }
-        page.append(meta, createNode("h2", "ia_title", article.title || "Résumé de l’actualité"), createNode("div", "ia_notice", "Synthèse générée automatiquement — se référer aux sources listées."));
+        page.append(meta, createNode("h2", "ia_title", article.title || "News summary"), createNode("div", "ia_notice", "Automatically generated summary — refer to the listed sources."));
         const sections = createNode("div", "ia_sections");
         sections.append(section(details.generated_by_ai
-            ? "Synthèse (générée par IA)"
-            : "Synthèse (extraits de la source — IA locale indisponible)", createNode("p", "", details.synthesis || "Aucun contenu disponible pour la synthèse.")));
+            ? "Summary (AI-generated)"
+            : "Summary (source excerpts — local AI unavailable)", createNode("p", "", details.synthesis || "No content is available for the summary.")));
         const keyPoints = stringItems(details.key_points);
         const entities = stringItems(details.entities);
         const related = stringItems(details.related);
         const sameTopic = objectItems(article.same_topic);
         if (keyPoints.length) {
-            sections.append(section("Points essentiels", list(keyPoints)));
+            sections.append(section("Key points", list(keyPoints)));
         }
         if (entities.length) {
-            sections.append(section("Personnes, entreprises et technologies", chips(entities)));
+            sections.append(section("People, companies and technologies", chips(entities)));
         }
         if (related.length) {
-            sections.append(section("Informations connexes", list(related)));
+            sections.append(section("Related information", list(related)));
         }
         if (sameTopic.length) {
-            sections.append(section("Autres publications sur le même sujet", relatedItems(sameTopic)));
+            sections.append(section("Other posts about the same topic", relatedItems(sameTopic)));
         }
         const backendSources = objectItems(details.sources_used);
         const sources = backendSources.length
@@ -193,7 +193,7 @@
                     title: article.title,
                     url: article.url,
                 }];
-        sections.append(section("Sources utilisées", sourceItems(sources)));
+        sections.append(section("Sources used", sourceItems(sources)));
         page.append(sections);
         iaBox.replaceChildren(page);
         iaBox.scrollTop = 0;
@@ -222,7 +222,7 @@
         catch (error) {
             if (error instanceof DOMException && error.name === "AbortError")
                 return false;
-            showError(error instanceof Error ? error.message : "Erreur inconnue");
+            showError(error instanceof Error ? error.message : "Unknown error");
             return false;
         }
     }

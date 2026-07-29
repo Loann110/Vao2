@@ -74,7 +74,7 @@
   }
 
   function unwrapObject(payload: unknown, property: string): Record<string, unknown> {
-    if (!isRecord(payload)) throw new Error("Réponse JSON invalide");
+    if (!isRecord(payload)) throw new Error("Invalid JSON response");
     const nested = payload[property];
     return isRecord(nested) ? nested : payload;
   }
@@ -94,7 +94,7 @@
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? ""
-      : new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(date);
+      : new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(date);
   }
 
   function stringItems(value: unknown): string[] {
@@ -120,11 +120,11 @@
       signal: requestController?.signal,
     });
 
-    if (!response.ok) throw new Error(`Erreur backend ${response.status}`);
+    if (!response.ok) throw new Error(`Backend error ${response.status}`);
 
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
-      throw new Error("Le backend doit retourner du JSON");
+      throw new Error("The backend must return JSON");
     }
     return response.json() as Promise<unknown>;
   }
@@ -174,7 +174,7 @@
         ),
       );
       row.append(text);
-      const link = externalLink(item.url, "Ouvrir");
+      const link = externalLink(item.url, "Open");
       if (link) row.append(link);
       wrapper.append(row);
     });
@@ -191,7 +191,7 @@
         createNode("div", "ia_item_meta", item.title || ""),
       );
       row.append(text);
-      const link = externalLink(item.url, "Contenu original");
+      const link = externalLink(item.url, "Original content");
       if (link) row.append(link);
       wrapper.append(row);
     });
@@ -200,7 +200,7 @@
 
   function panel(...children: Node[]): void {
     const page = createNode("div", "ia_page");
-    page.append(createNode("div", "ia_eyebrow", "Synthèse"), ...children);
+    page.append(createNode("div", "ia_eyebrow", "AI summary"), ...children);
     iaBox.replaceChildren(page);
   }
 
@@ -213,7 +213,7 @@
       createNode(
         "div",
         "ia_empty",
-        "Choisis un article dans le feed pour afficher sa synthèse ici.",
+        "Select an article from the feed to display its summary here.",
       ),
     );
   }
@@ -222,18 +222,18 @@
     const loading = createNode("div", "ia_loading");
     loading.append(
       createNode("div", "ia_loader"),
-      createNode("div", "", "Génération de la synthèse en cours…"),
+      createNode("div", "", "Generating summary…"),
     );
     panel(loading);
   }
 
   function showError(message: string): void {
-    panel(createNode("div", "ia_error", `Synthèse indisponible : ${message}`));
+    panel(createNode("div", "ia_error", `Summary unavailable: ${message}`));
   }
 
   function render(article: Article, details: AIDetails): void {
     const page = createNode("article", "ia_page");
-    page.append(createNode("div", "ia_eyebrow", "Synthèse"));
+    page.append(createNode("div", "ia_eyebrow", "AI summary"));
 
     const imageUrl = validBackendUrl(article.image_url);
     if (imageUrl) {
@@ -257,11 +257,11 @@
 
     page.append(
       meta,
-      createNode("h2", "ia_title", article.title || "Résumé de l’actualité"),
+      createNode("h2", "ia_title", article.title || "News summary"),
       createNode(
         "div",
         "ia_notice",
-        "Synthèse générée automatiquement — se référer aux sources listées.",
+        "Automatically generated summary — refer to the listed sources.",
       ),
     );
 
@@ -269,12 +269,12 @@
     sections.append(
       section(
         details.generated_by_ai
-          ? "Synthèse (générée par IA)"
-          : "Synthèse (extraits de la source — IA locale indisponible)",
+          ? "Summary (AI-generated)"
+          : "Summary (source excerpts — local AI unavailable)",
         createNode(
           "p",
           "",
-          details.synthesis || "Aucun contenu disponible pour la synthèse.",
+          details.synthesis || "No content is available for the summary.",
         ),
       ),
     );
@@ -285,17 +285,17 @@
     const sameTopic = objectItems<RelatedArticle>(article.same_topic);
 
     if (keyPoints.length) {
-      sections.append(section("Points essentiels", list(keyPoints)));
+      sections.append(section("Key points", list(keyPoints)));
     }
     if (entities.length) {
-      sections.append(section("Personnes, entreprises et technologies", chips(entities)));
+      sections.append(section("People, companies and technologies", chips(entities)));
     }
     if (related.length) {
-      sections.append(section("Informations connexes", list(related)));
+      sections.append(section("Related information", list(related)));
     }
     if (sameTopic.length) {
       sections.append(
-        section("Autres publications sur le même sujet", relatedItems(sameTopic)),
+        section("Other posts about the same topic", relatedItems(sameTopic)),
       );
     }
 
@@ -308,7 +308,7 @@
           url: article.url,
         }];
 
-    sections.append(section("Sources utilisées", sourceItems(sources)));
+    sections.append(section("Sources used", sourceItems(sources)));
     page.append(sections);
     iaBox.replaceChildren(page);
     iaBox.scrollTop = 0;
@@ -342,7 +342,7 @@
       return true;
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === "AbortError") return false;
-      showError(error instanceof Error ? error.message : "Erreur inconnue");
+      showError(error instanceof Error ? error.message : "Unknown error");
       return false;
     }
   }
