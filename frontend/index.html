@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vao2</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="app">
+    <aside>
+      <div class="logo">
+        <b class="logo_icon">Vao2</b>
+        <div class="little_description">Your <span>custom feed</span>, only for you</div>
+      </div>
+
+      <!-- The sidebar navigation is handled by the JS script! -->
+      <nav id="nav"></nav>
+
+      <button class="theme_btn" id="theme_button" type="button" onclick="toggleTheme()" aria-label="Switch to dark theme">
+        <span class="theme_icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <g class="theme_sun">
+              <circle cx="12" cy="12" r="3.5" fill="currentColor"/>
+              <path d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"
+                    fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </g>
+            <path class="theme_moon"
+                  d="M20.2 15.5A8.4 8.4 0 0 1 8.5 3.8 8.5 8.5 0 1 0 20.2 15.5Z"
+                  fill="currentColor"/>
+          </svg>
+        </span>
+        <span id="theme_label">Dark</span>
+      </button>
+    </aside>
+
+    <main>
+      <header>
+        <div>
+          <h1 id="title">For you</h1>
+          <div class="subtitle" id="subtitle"></div>
+        </div>
+
+        <div class="tools">
+          <input id="feed_search" class="input" placeholder="Search in your feed..." />
+          <button class="btn_primary" id="refresh_button" onclick="refreshFeed()">Refresh</button>
+        </div>
+      </header>
+
+      <div class="notice" id="notice"></div>
+      <section id="content"></section>
+    </main>
+    <section id="ia_box" aria-live="polite" aria-label="AI Synthesis"></section>
+  </div>
+
+  <!-- This page is opened when the button "Add source" is clicked -->
+  <!-- This allows the user to add new sources to their feed -->
+  <div class="add_source" id="add_source_modal" role="dialog" aria-modal="true" aria-labelledby="add_source_title" aria-hidden="true">
+    <div class="add_source_content">
+      <h1 id="add_source_title">Add a source</h1>
+      <select id="source_type" onchange="updateSourcePlaceholder()">
+        <option value="news">Actualités</option>
+        <option value="youtube">YouTube</option>
+        <option value="github">GitHub</option>
+        <option value="reddit">Reddit</option>
+        <option value="rss">Flux RSS</option>
+        <option value="podcast">Podcast</option>
+      </select>
+
+    <!-- We need to adapt the placeholder to the source type with JS-->
+      <input id="source_input" class="input" placeholder="Enter the source URL..." />
+      <div class="add_source_buttons">
+        <button class="btn_primary" id="add_source_button" onclick="addSource()">Search</button>
+        <button class="btn_secondary" id="cancel_add_source_button" onclick="closeAddSource()">Cancel</button>
+      </div>
+      <div id="results" class="results"></div>
+    </div>
+  </div>
+
+  <script src="ui.js"></script>
+  <script src="app.js"></script>
+  <!-- ia_box.js is compiled from ia_box.ts -->
+  <script src="ia_box.js"></script>
+</body>
+</html>
