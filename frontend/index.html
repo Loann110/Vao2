@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Vao2</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="add_source/add_source.css">
 </head>
 
 <body>
@@ -42,7 +43,7 @@
           <div class="subtitle" id="subtitle"></div>
         </div>
 
-        <div class="tools">
+        <div class="tools" id="feed_tools">
           <input id="feed_search" class="input" placeholder="Search in your feed..." />
           <button class="btn_primary" id="refresh_button" onclick="refreshFeed()">Refresh</button>
         </div>
@@ -50,6 +51,7 @@
 
       <div class="notice" id="notice"></div>
       <section id="content"></section>
+      <section id="add_source_view" aria-label="Add a source" hidden></section>
     </main>
     <section id="ia_box" aria-live="polite" aria-label="AI Synthesis"></section>
   </div>
@@ -81,6 +83,7 @@
   <script src="ui.js"></script>
   <script src="app.js"></script>
   <!-- ia_box.js is compiled from ia_box.ts -->
-  <script src="ia_box.js"></script>
+  <script src="ia_box/ia_box.js"></script>
+  <script src="add_source/add_source.js"></script>
 </body>
 </html>
