@@ -81,12 +81,12 @@ interface Nodes {
   const GENERAL_CATEGORY: Category = { id: "general", name: "General" };
 
   const PLATFORMS: readonly Platform[] = [
-    { id: "news", label: "News", placeholder: "An outlet: Reuters, The Verge…" },
-    { id: "youtube", label: "YouTube", placeholder: "A channel: Fireship, ThePrimeagen…" },
-    { id: "github", label: "GitHub", placeholder: "A repo or an account: pytorch, opencv…" },
-    { id: "reddit", label: "Reddit", placeholder: "A subreddit: computervision, drones…" },
-    { id: "rss", label: "RSS feed", placeholder: "A feed or site URL" },
-    { id: "podcast", label: "Podcast", placeholder: "A podcast: Lex Fridman, Darknet Diaries…" },
+    { id: "news", label: "News", placeholder: "Search for an outlet or a topic..." },
+    { id: "youtube", label: "YouTube", placeholder: "Search for a channel or a topic..." },
+    { id: "github", label: "GitHub", placeholder: "Search for a repository, organization or account..." },
+    { id: "reddit", label: "Reddit", placeholder: "Search for a community or a topic..." },
+    { id: "rss", label: "RSS feed", placeholder: "Enter a feed or website URL..." },
+    { id: "podcast", label: "Podcast", placeholder: "Search for a podcast or a topic..." },
   ];
 
   const platformById = new Map<PlatformId, Platform>(
@@ -456,7 +456,7 @@ interface Nodes {
             </label>
             <label class="as_field">
               <span class="as_label">New category</span>
-              <input id="as_new_category" class="input" placeholder="Computer vision, Drones…">
+              <input id="as_new_category" class="input" placeholder="Enter a category name...">
             </label>
             <button type="button" class="btn_secondary" id="as_create_category">Create</button>
           </div>

@@ -1,6 +1,6 @@
 const NAV_ITEMS = [
   { id: "all", label: "For you", icon: "home", subtitle: "All your sources in one place" },
-  { id: "add-source", label: "Add source", icon: "add", action: "open-source-modal" },
+  { id: "add-source", label: "Add source", icon: "add", subtitle: "Find and organize your sources" },
   { type: "title", label: "Sources" },
   { id: "youtube", label: "YouTube", icon: "youtube", subtitle: "Latest videos from your channels" },
   { id: "github", label: "GitHub", icon: "github", subtitle: "Repositories and releases you follow" },
@@ -103,8 +103,20 @@ function selectNavItem(button, item) {
 
   const title = document.getElementById("title");
   const subtitle = document.getElementById("subtitle");
+  const content = document.getElementById("content");
+  const addSourceView = document.getElementById("add_source_view");
+  const feedTools = document.getElementById("feed_tools");
+  const notice = document.getElementById("notice");
+  const isAddSourceView = item.id === "add-source";
+
   if (title) title.textContent = item.label;
-  if (subtitle) subtitle.textContent = item.subtitle;
+  if (subtitle) subtitle.textContent = item.subtitle || "";
+  if (content) content.hidden = isAddSourceView;
+  if (addSourceView) addSourceView.hidden = !isAddSourceView;
+  if (feedTools) feedTools.hidden = isAddSourceView;
+  if (notice) notice.hidden = isAddSourceView;
+
+  document.body.dataset.view = item.id;
 
   window.dispatchEvent(new CustomEvent("navigationchange", {
     detail: { view: item.id },
@@ -128,7 +140,7 @@ function renderNavbar() {
 
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `nav_btn${item.id === "all" ? " active" : ""}${item.action ? " add_source_btn" : ""}`;
+    button.className = `nav_btn${item.id === "all" ? " active" : ""}${item.id === "add-source" ? " add_source_btn" : ""}`;
     button.dataset.view = item.id;
     button.setAttribute("aria-current", item.id === "all" ? "page" : "false");
     button.setAttribute("aria-label", item.label);
@@ -143,10 +155,6 @@ function renderNavbar() {
 
     button.append(icon, label);
     button.addEventListener("click", () => {
-      if (item.action === "open-source-modal") {
-        openAddSource();
-        return;
-      }
       selectNavItem(button, item);
     });
     nav.append(button);
