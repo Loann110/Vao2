@@ -30,7 +30,7 @@ Stay informed faster.
 ## Demo
 
 <p align="center">
-  <a href="docs/demo.mp4">
+  <a href="https://github.com/Loann110/Vao2/issues/1#issuecomment-5154011207">
     <img src="https://img.shields.io/badge/Watch_the_demo-Play-8b5cf6?logo=youtube&logoColor=242424&labelColor=ddcff4" alt="Watch the Vao2 demo">
   </a>
 </p>
