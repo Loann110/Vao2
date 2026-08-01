@@ -116,24 +116,45 @@ async function connectYouTubePlayers(version) {
     const muteButton = controls?.querySelector('[data-action="mute"]');
     const volume = controls?.querySelector(".feed_player_volume");
     const time = controls?.querySelector(".feed_player_time");
+    const cover = iframe.closest(".feed_card_video")?.querySelector(".feed_player_cover");
     const player = new YT.Player(iframe, {
       events: {
         onReady() {
+          const syncAudioControls = () => {
+            const isMuted = player.isMuted() || player.getVolume() === 0;
+            if (muteButton) {
+              muteButton.textContent = isMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A";
+              muteButton.setAttribute("aria-label", isMuted ? "Unmute video" : "Mute video");
+              muteButton.title = isMuted ? "Unmute" : "Mute";
+            }
+            if (volume && document.activeElement !== volume) {
+              volume.value = String(player.getVolume());
+            }
+          };
+
+          syncAudioControls();
           progress?.addEventListener("input", () => {
             const duration = player.getDuration();
             if (duration) player.seekTo(duration * Number(progress.value) / 100, true);
           });
           volume?.addEventListener("input", () => {
-            player.setVolume(Number(volume.value));
-            if (Number(volume.value) > 0) player.unMute();
+            const value = Number(volume.value);
+            player.setVolume(value);
+            if (value > 0) player.unMute();
+            else player.mute();
+            syncAudioControls();
           });
           controls?.addEventListener("click", (event) => {
             const button = event.target.closest("button[data-action]");
             if (!button) return;
             if (button.dataset.action === "mute") {
-              if (player.isMuted()) player.unMute();
-              else player.mute();
-              muteButton.textContent = player.isMuted() ? "Unmute" : "Mute";
+              if (player.isMuted() || player.getVolume() === 0) {
+                if (player.getVolume() === 0) player.setVolume(100);
+                player.unMute();
+              } else {
+                player.mute();
+              }
+              syncAudioControls();
             } else if (player.getPlayerState() === YT.PlayerState.PLAYING) {
               player.pauseVideo();
             } else {
@@ -149,12 +170,18 @@ async function connectYouTubePlayers(version) {
             if (time) {
               time.textContent = `${formatVideoTime(player.getCurrentTime())} / ${formatVideoTime(duration)}`;
             }
+            syncAudioControls();
           }, 500);
           youtubeProgressTimers.push(timer);
         },
         onStateChange(event) {
           const isPlaying = event.data === YT.PlayerState.PLAYING;
-          if (playButton) playButton.textContent = isPlaying ? "Pause" : "Play";
+          if (isPlaying) cover?.remove();
+          if (playButton) {
+            playButton.textContent = isPlaying ? "\u275A\u275A" : "\u25B6";
+            playButton.setAttribute("aria-label", isPlaying ? "Pause video" : "Play video");
+            playButton.title = isPlaying ? "Pause" : "Play";
+          }
           if (isPlaying) {
             youtubePlayers.forEach((otherPlayer) => {
               if (otherPlayer !== event.target) otherPlayer.pauseVideo();
@@ -316,6 +343,17 @@ function renderForYouContent() {
 
       const video = document.createElement("div");
       video.className = "feed_card_video";
+      if (article.image_url) {
+        const cover = document.createElement("img");
+        const fallbackImage = article.image_url;
+        cover.className = "feed_player_cover";
+        cover.src = fallbackImage.replace(/\/hqdefault\.jpg(?:\?.*)?$/, "/maxresdefault.jpg");
+        cover.addEventListener("error", () => {
+          if (cover.src !== fallbackImage) cover.src = fallbackImage;
+        }, { once: true });
+        cover.alt = "";
+        video.appendChild(cover);
+      }
       const controls = document.createElement("div");
       controls.className = "feed_player_controls";
       const progress = document.createElement("input");
@@ -332,12 +370,16 @@ function renderForYouContent() {
       const play = document.createElement("button");
       play.type = "button";
       play.dataset.action = "toggle";
-      play.textContent = "Play";
+      play.textContent = "\u25B6";
+      play.setAttribute("aria-label", "Play video");
+      play.title = "Play";
 
       const mute = document.createElement("button");
       mute.type = "button";
       mute.dataset.action = "mute";
-      mute.textContent = "Mute";
+      mute.textContent = "\uD83D\uDD0A";
+      mute.setAttribute("aria-label", "Mute video");
+      mute.title = "Mute";
 
       const volume = document.createElement("input");
       volume.className = "feed_player_volume";

@@ -333,9 +333,21 @@ header {
 
 .feed_card_video {
   min-width: 0;
+  position: relative;
   overflow: hidden;
   border-radius: 8px;
   background: #000;
+}
+
+.feed_player_cover {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #000;
+  pointer-events: none;
 }
 
 .feed_card_player {
@@ -373,13 +385,16 @@ header {
 }
 
 .feed_player_actions button {
-  min-width: 58px;
+  width: 36px;
+  min-width: 36px;
   height: 30px;
-  padding: 0 10px;
+  padding: 0;
   border: 1px solid #444;
   border-radius: 6px;
   color: #fff;
   background: #202020;
+  font-size: 14px;
+  line-height: 1;
   cursor: pointer;
 }
 
