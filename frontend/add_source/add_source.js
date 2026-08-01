@@ -112,6 +112,9 @@
             return value;
         }
     }
+    function previewText(value, limit = 100) {
+        return value.length <= limit ? value : `${value.slice(0, limit).trimEnd()}...`;
+    }
     /* ============================== 2. VIEW STATE ============================== */
     const state = {
         platform: PLATFORMS[0].id,
@@ -580,7 +583,10 @@
                 row.append(image);
             }
             const text = createNode("div", "as_result_text");
-            text.append(createNode("div", "as_result_title", result.title), createNode("div", "as_result_meta", result.subtitle || hostOf(result.url)));
+            const subtitle = result.subtitle || hostOf(result.url);
+            const meta = createNode("div", "as_result_meta", previewText(subtitle));
+            meta.title = subtitle;
+            text.append(createNode("div", "as_result_title", result.title), meta);
             row.append(text);
             const already = result.alreadyAdded || hasSource(result.url);
             const action = createNode("button", "card_btn btn_primary", already ? "Already added" : "Add");

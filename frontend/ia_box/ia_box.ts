@@ -258,11 +258,6 @@
     page.append(
       meta,
       createNode("h2", "ia_title", article.title || "News summary"),
-      createNode(
-        "div",
-        "ia_notice",
-        "Automatically generated summary — refer to the listed sources.",
-      ),
     );
 
     const sections = createNode("div", "ia_sections");

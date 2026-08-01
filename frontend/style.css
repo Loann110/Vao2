@@ -473,7 +473,12 @@ header {
 
 .feed_card_subtitle {
   margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
   color: var(--muted);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .feed_card_link {

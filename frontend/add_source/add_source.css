@@ -188,8 +188,11 @@ body[data-view="add-source"] #ia_box {
 
 .as_results {
   margin-top: 14px;
+  max-height: 360px;
+  padding-right: 4px;
   display: grid;
   gap: 8px;
+  overflow-y: auto;
 }
 
 .as_result,
@@ -215,6 +218,12 @@ body[data-view="add-source"] #ia_box {
 .as_result_text {
   min-width: 0;
   flex: 1;
+  overflow: hidden;
+}
+
+.as_result > .card_btn {
+  margin-left: auto;
+  flex: none;
 }
 
 .as_result_title {
@@ -225,6 +234,8 @@ body[data-view="add-source"] #ia_box {
 }
 
 .as_result_meta {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 6px;

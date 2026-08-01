@@ -294,7 +294,7 @@ function renderForYouContent() {
     const isYouTube = article.platform === "youtube" && article.media_url;
     if (isYouTube) card.classList.add("is_youtube");
 
-    if (article.image_url && !isYouTube) {
+    if (article.image_url && !isYouTube && article.platform !== "github") {
       const image = document.createElement("img");
       image.className = "feed_card_image";
       const fallbackImage = article.image_url;

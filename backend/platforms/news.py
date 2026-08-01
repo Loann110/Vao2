@@ -1,3 +1,6 @@
+from urllib.parse import quote_plus
+
+
 NEWS_OUTLETS: tuple[tuple[str, str, str], ...] = (
     ("Le Monde", "https://www.lemonde.fr/rss/une.xml", "https://www.lemonde.fr"),
     ("Le Figaro", "https://www.lefigaro.fr/rss/figaro_actualites.xml", "https://www.lefigaro.fr"),
@@ -27,8 +30,9 @@ NEWS_OUTLETS: tuple[tuple[str, str, str], ...] = (
 
 
 def search_outlets(query):
-    query = query.strip().lower()
-    return [
+    query = query.strip()
+    needle = query.lower()
+    results = [
         {
             "platform": "news",
             "title": name,
@@ -38,5 +42,24 @@ def search_outlets(query):
             "thumbnail": "",
         }
         for name, feed_url, website_url in NEWS_OUTLETS
-        if query in name.lower() or query in website_url.lower()
+        if needle in name.lower() or needle in website_url.lower()
     ]
+
+    encoded_query = quote_plus(query)
+    results.append(
+        {
+            "platform": "news",
+            "title": f"News about {query}",
+            "description": "Live topic feed from Google News",
+            "url": (
+                f"https://news.google.com/search?q={encoded_query}"
+                "&hl=en-US&gl=US&ceid=US:en"
+            ),
+            "feed_url": (
+                f"https://news.google.com/rss/search?q={encoded_query}"
+                "&hl=en-US&gl=US&ceid=US:en"
+            ),
+            "thumbnail": "",
+        }
+    )
+    return results
