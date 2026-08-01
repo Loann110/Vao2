@@ -10,6 +10,7 @@ interface SourcesApi {
   categories(): Category[];
   byPlatform(platform: string): StoredSource[];
   byCategory(categoryId: string): StoredSource[];
+  reload(): Promise<void>;
 }
 
 type PlatformId = "news" | "youtube" | "github" | "reddit" | "rss" | "podcast";
@@ -30,9 +31,11 @@ interface Category {
 interface SourceCandidate {
   platform: PlatformId;
   url: string;
+  feedUrl?: string;
   title: string;
   subtitle: string;
   thumbnail: string;
+  alreadyAdded?: boolean;
 }
 
 interface StoredSource extends SourceCandidate {
@@ -62,7 +65,6 @@ interface Nodes {
   createCategory: HTMLButtonElement;
   categoryChips: HTMLElement;
   searchSub: HTMLElement;
-  searchForm: HTMLFormElement;
   query: HTMLInputElement;
   results: HTMLElement;
   manualForm: HTMLFormElement;
@@ -77,7 +79,8 @@ interface Nodes {
   "use strict";
 
   const STORE_KEY = "vao2-sources";
-  const SEARCH_ENDPOINT = "/api/search";
+  const API_BASE_URL = "/api";
+  const SEARCH_DEBOUNCE_MS = 300;
   const GENERAL_CATEGORY: Category = { id: "general", name: "General" };
 
   const PLATFORMS: readonly Platform[] = [
@@ -101,10 +104,21 @@ interface Nodes {
     return platformById.get(id)?.label ?? id;
   }
 
-  /* ------------------------------------------------------------------ store */
+  /* ============================ 1. LOCAL STORAGE ============================
+   *
+   * localStorage remains active while the backend is being prepared.
+   * The HTTP layer, grouped in section 6, can later become the source of
+   * truth without mixing fetch calls with the rendering code.
+   */
 
   function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  function firstString(value: Record<string, unknown>, ...keys: string[]): string | undefined {
+    return keys.map((key) => value[key]).find(
+      (item): item is string => typeof item === "string" && item.length > 0,
+    );
   }
 
   function toCategory(value: unknown): Category | null {
@@ -112,6 +126,12 @@ interface Nodes {
     const { id, name } = value;
     if (typeof id !== "string" || !id || typeof name !== "string" || !name) return null;
     return { id, name };
+  }
+
+  function parseList<T>(value: unknown, parse: (item: unknown) => T | null): T[] {
+    return Array.isArray(value)
+      ? value.map(parse).filter((item): item is T => item !== null)
+      : [];
   }
 
   function toSource(value: unknown): StoredSource | null {
@@ -122,12 +142,13 @@ interface Nodes {
     return {
       id: typeof value.id === "string" ? value.id : newId("src"),
       platform: isPlatformId(value.platform) ? value.platform : "rss",
-      categoryId: typeof value.categoryId === "string" ? value.categoryId : GENERAL_CATEGORY.id,
-      title: typeof value.title === "string" ? value.title : hostOf(url),
-      subtitle: typeof value.subtitle === "string" ? value.subtitle : "",
+      categoryId: firstString(value, "categoryId", "category_id") ?? GENERAL_CATEGORY.id,
+      title: firstString(value, "title") ?? hostOf(url),
+      subtitle: firstString(value, "subtitle") ?? "",
       url: url.trim(),
-      thumbnail: typeof value.thumbnail === "string" ? value.thumbnail : "",
-      addedAt: typeof value.addedAt === "string" ? value.addedAt : new Date().toISOString(),
+      feedUrl: firstString(value, "feedUrl", "feed_url"),
+      thumbnail: firstString(value, "thumbnail") ?? "",
+      addedAt: firstString(value, "addedAt", "added_at") ?? new Date().toISOString(),
     };
   }
 
@@ -140,12 +161,8 @@ interface Nodes {
     }
     if (!isRecord(parsed)) return { categories: [{ ...GENERAL_CATEGORY }], sources: [] };
 
-    const categories = Array.isArray(parsed.categories)
-      ? parsed.categories.map(toCategory).filter((item): item is Category => item !== null)
-      : [];
-    const sources = Array.isArray(parsed.sources)
-      ? parsed.sources.map(toSource).filter((item): item is StoredSource => item !== null)
-      : [];
+    const categories = parseList(parsed.categories, toCategory);
+    const sources = parseList(parsed.sources, toSource);
 
     return {
       categories: categories.length ? categories : [{ ...GENERAL_CATEGORY }],
@@ -161,7 +178,6 @@ interface Nodes {
     } catch {
       /* Quota full or private mode: the UI still works for this session. */
     }
-    /* Backend seam: POST /api/sources here once the API exists. */
   }
 
   function normalizeUrl(value: string): string {
@@ -190,7 +206,7 @@ interface Nodes {
     }
   }
 
-  /* ------------------------------------------------------------------ state */
+  /* ============================== 2. VIEW STATE ============================== */
 
   const state: State = {
     platform: PLATFORMS[0].id,
@@ -202,9 +218,10 @@ interface Nodes {
   };
 
   let searchController: AbortController | null = null;
+  let searchTimer: number | null = null;
   let nodes!: Nodes;
 
-  /* ----------------------------------------------------------------- search */
+  /* =================== 3. SEARCH AND AUTOMATIC SUGGESTIONS =================== */
 
   function isAbortError(error: unknown): boolean {
     return error instanceof DOMException && error.name === "AbortError";
@@ -216,22 +233,14 @@ interface Nodes {
     if (typeof raw !== "string" || !raw.trim()) return null;
     const url = raw.trim();
 
-    const title = [item.title, item.name, item.source_name].find(
-      (value): value is string => typeof value === "string" && value.length > 0,
-    );
-    const subtitle = [item.description, item.subtitle, item.summary].find(
-      (value): value is string => typeof value === "string" && value.length > 0,
-    );
-    const thumbnail = [item.thumbnail, item.image_url].find(
-      (value): value is string => typeof value === "string" && value.length > 0,
-    );
-
     return {
       platform,
       url,
-      title: title ?? hostOf(url),
-      subtitle: subtitle ?? "",
-      thumbnail: thumbnail ?? "",
+      feedUrl: firstString(item, "feed_url"),
+      title: firstString(item, "title", "name", "source_name") ?? hostOf(url),
+      subtitle: firstString(item, "description", "subtitle", "summary") ?? "",
+      thumbnail: firstString(item, "thumbnail", "image_url") ?? "",
+      alreadyAdded: item.already_added === true,
     };
   }
 
@@ -240,7 +249,7 @@ interface Nodes {
     query: string,
     signal: AbortSignal,
   ): Promise<SourceCandidate[] | null> {
-    const endpoint = `${SEARCH_ENDPOINT}?platform=${encodeURIComponent(platform)}&q=${encodeURIComponent(query)}`;
+    const endpoint = `${API_BASE_URL}/search?platform=${encodeURIComponent(platform)}&q=${encodeURIComponent(query)}`;
 
     let response: Response;
     try {
@@ -314,7 +323,7 @@ interface Nodes {
     if (platform === "github") return searchGithub(query, signal);
 
     throw new Error(
-      `${platformLabel(platform)} search needs the backend at ${SEARCH_ENDPOINT}, which isn't answering. Add the URL by hand below.`,
+      `${platformLabel(platform)} search needs the backend at ${API_BASE_URL}/search, which isn't answering. Add the URL by hand below.`,
     );
   }
 
@@ -338,7 +347,30 @@ interface Nodes {
     renderResults();
   }
 
-  /* -------------------------------------------------------------- mutations */
+  /**
+   * Waits briefly before searching to avoid sending an HTTP request for every
+   * keystroke. New input replaces the previously scheduled search.
+   */
+  function scheduleSearch(): void {
+    if (searchTimer !== null) window.clearTimeout(searchTimer);
+
+    const query = nodes.query.value.trim();
+    if (query.length < 2) {
+      searchController?.abort();
+      state.status = "idle";
+      state.results = [];
+      state.error = "";
+      renderResults();
+      return;
+    }
+
+    searchTimer = window.setTimeout(() => {
+      searchTimer = null;
+      void runSearch(query);
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
+  /* ================= 4. LOCAL CHANGES + BACKEND SYNC ================= */
 
   function createCategory(name: string): Category | null {
     const label = name.trim();
@@ -352,6 +384,7 @@ interface Nodes {
     const category: Category = { id: newId("cat"), name: label };
     store.categories.push(category);
     writeStore();
+    void syncBackend("/categories", "POST", { name: category.name });
     return category;
   }
 
@@ -381,20 +414,31 @@ interface Nodes {
     if (state.categoryId === categoryId) state.categoryId = store.categories[0].id;
 
     writeStore();
+    void syncBackend(`/categories/${encodeURIComponent(categoryId)}`, "DELETE");
     renderCategories();
     renderSources();
   }
 
-  function addSource(candidate: SourceCandidate): boolean {
+  function addSource(candidate: SourceCandidate, isManual = false): boolean {
     if (hasSource(candidate.url)) return false;
 
-    store.sources.push({
+    const source: StoredSource = {
       ...candidate,
       id: newId("src"),
       categoryId: state.categoryId,
       addedAt: new Date().toISOString(),
-    });
+    };
+    store.sources.push(source);
     writeStore();
+    void syncBackend(isManual ? "/sources/manual" : "/sources", "POST", {
+      platform: source.platform,
+      url: source.url,
+      feed_url: source.feedUrl,
+      title: source.title,
+      subtitle: source.subtitle,
+      thumbnail: source.thumbnail,
+      category_id: source.categoryId,
+    });
     renderSources();
     return true;
   }
@@ -402,6 +446,7 @@ interface Nodes {
   function removeSource(sourceId: string): void {
     store.sources = store.sources.filter((source) => source.id !== sourceId);
     writeStore();
+    void syncBackend(`/sources/${encodeURIComponent(sourceId)}`, "DELETE");
     renderSources();
     renderResults();
   }
@@ -411,10 +456,13 @@ interface Nodes {
     if (!source) return;
     source.categoryId = categoryId;
     writeStore();
+    void syncBackend(`/sources/${encodeURIComponent(sourceId)}`, "PATCH", {
+      category_id: categoryId,
+    });
     renderSources();
   }
 
-  /* ------------------------------------------------------------------- view */
+  /* ========================== 5. VIEW CONSTRUCTION ========================== */
 
   function createNode<K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -431,6 +479,12 @@ interface Nodes {
     const node = root.querySelector(selector);
     if (!node) throw new Error(`Add-source view: missing ${selector}`);
     return node as unknown as E;
+  }
+
+  function createOption(category: Category): HTMLOptionElement {
+    const option = createNode("option", "", category.name);
+    option.value = category.id;
+    return option;
   }
 
   function buildSkeleton(root: HTMLElement): void {
@@ -468,10 +522,9 @@ interface Nodes {
             <h2><span class="as_step">3</span> Search</h2>
             <p class="as_sub" id="as_search_sub"></p>
           </div>
-          <form class="as_row" id="as_search_form">
+          <div class="as_row">
             <input id="as_query" class="input as_grow" autocomplete="off">
-            <button type="submit" class="btn_primary">Search</button>
-          </form>
+          </div>
           <div id="as_results" class="as_results"></div>
 
           <details class="as_manual">
@@ -504,7 +557,6 @@ interface Nodes {
       createCategory: requireNode<HTMLButtonElement>(root, "#as_create_category"),
       categoryChips: requireNode<HTMLElement>(root, "#as_category_chips"),
       searchSub: requireNode<HTMLElement>(root, "#as_search_sub"),
-      searchForm: requireNode<HTMLFormElement>(root, "#as_search_form"),
       query: requireNode<HTMLInputElement>(root, "#as_query"),
       results: requireNode<HTMLElement>(root, "#as_results"),
       manualForm: requireNode<HTMLFormElement>(root, "#as_manual_form"),
@@ -542,15 +594,8 @@ interface Nodes {
       }
     });
 
-    nodes.searchForm.addEventListener("submit", (event: Event) => {
-      event.preventDefault();
-      const query = nodes.query.value.trim();
-      if (query.length < 2) {
-        nodes.query.focus();
-        return;
-      }
-      void runSearch(query);
-    });
+    /* Show suggestions while typing: no search button is needed. */
+    nodes.query.addEventListener("input", scheduleSearch);
 
     nodes.manualForm.addEventListener("submit", (event: Event) => {
       event.preventDefault();
@@ -563,7 +608,7 @@ interface Nodes {
         title: nodes.manualTitle.value.trim() || hostOf(url),
         subtitle: "",
         thumbnail: "",
-      });
+      }, true);
       if (added) {
         nodes.manualUrl.value = "";
         nodes.manualTitle.value = "";
@@ -608,6 +653,7 @@ interface Nodes {
         renderPlatforms();
         renderSearchHint();
         renderResults();
+        scheduleSearch();
         nodes.query.focus();
       });
 
@@ -620,7 +666,7 @@ interface Nodes {
     nodes.searchSub.textContent =
       state.platform === "github"
         ? "Hits the GitHub API directly, no backend needed."
-        : `Queries ${SEARCH_ENDPOINT}?platform=${state.platform}&q=…`;
+        : `Suggestions from ${API_BASE_URL}/search for ${state.platform}.`;
   }
 
   function renderCategories(): void {
@@ -630,11 +676,7 @@ interface Nodes {
     }
 
     nodes.category.replaceChildren();
-    store.categories.forEach((category) => {
-      const option = createNode("option", "", category.name);
-      option.value = category.id;
-      nodes.category.append(option);
-    });
+    nodes.category.append(...store.categories.map(createOption));
     nodes.category.value = state.categoryId;
 
     nodes.categoryChips.replaceChildren();
@@ -656,22 +698,20 @@ interface Nodes {
   function renderResults(): void {
     nodes.results.replaceChildren();
 
-    if (state.status === "idle") {
-      nodes.results.append(createNode("div", "as_hint", "Search to see sources you can add."));
-      return;
-    }
     if (state.status === "loading") {
       const loading = createNode("div", "as_loading");
       loading.append(createNode("div", "ia_loader"), createNode("div", "", "Searching…"));
       nodes.results.append(loading);
       return;
     }
-    if (state.status === "empty") {
-      nodes.results.append(createNode("div", "as_hint", "No results. Try another term."));
-      return;
-    }
-    if (state.status === "error") {
-      nodes.results.append(createNode("div", "as_error", state.error));
+    const messages: Partial<Record<SearchStatus, [string, string]>> = {
+      idle: ["as_hint", "Search to see sources you can add."],
+      empty: ["as_hint", "No results. Try another term."],
+      error: ["as_error", state.error],
+    };
+    const message = messages[state.status];
+    if (message) {
+      nodes.results.append(createNode("div", ...message));
       return;
     }
 
@@ -693,7 +733,7 @@ interface Nodes {
       );
       row.append(text);
 
-      const already = hasSource(result.url);
+      const already = result.alreadyAdded || hasSource(result.url);
       const action = createNode("button", "card_btn btn_primary", already ? "Already added" : "Add");
       action.type = "button";
       action.disabled = already;
@@ -760,11 +800,7 @@ interface Nodes {
 
     const select = createNode("select", "input as_move");
     select.setAttribute("aria-label", `Category for ${source.title}`);
-    store.categories.forEach((category) => {
-      const option = createNode("option", "", category.name);
-      option.value = category.id;
-      select.append(option);
-    });
+    select.append(...store.categories.map(createOption));
     select.value = source.categoryId;
     select.addEventListener("change", () => moveSource(source.id, select.value));
 
@@ -785,7 +821,68 @@ interface Nodes {
     window.setNavCounts?.(counts);
   }
 
-  /* ------------------------------------------------------------------- init */
+  /* ========================== 6. BACKEND HTTP LAYER ==========================
+   *
+   * All routes are intentionally kept together here. For now, the interface
+   * remains local-first: if the server is unavailable, the local change still
+   * works and the error is only logged.
+   */
+
+  async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      credentials: "same-origin",
+      ...options,
+      headers: {
+        Accept: "application/json",
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(options.headers || {}),
+      },
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    const payload: unknown = contentType.includes("application/json")
+      ? await response.json()
+      : null;
+
+    if (!response.ok) {
+      const detail = isRecord(payload) && typeof payload.detail === "string"
+        ? payload.detail
+        : `Backend error ${response.status}`;
+      throw new Error(detail);
+    }
+
+    return payload as T;
+  }
+
+  async function syncBackend(
+    path: string,
+    method: "POST" | "PATCH" | "DELETE",
+    body?: unknown,
+  ): Promise<void> {
+    try {
+      await apiRequest(path, {
+        method,
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+    } catch (error: unknown) {
+      console.warn("[Add source] Backend unavailable; local data was kept.", error);
+    }
+  }
+
+  async function reloadFromBackend(): Promise<void> {
+    const payload = await apiRequest<{ categories: unknown[]; sources: unknown[] }>("/sources");
+    const categories = parseList(payload.categories, toCategory);
+    const sources = parseList(payload.sources, toSource);
+
+    store.categories = categories.length ? categories : [{ ...GENERAL_CATEGORY }];
+    store.sources = sources;
+    writeStore();
+    renderCategories();
+    renderSources();
+    renderResults();
+  }
+
+  /* =================== 7. INITIALIZATION AND PUBLIC VIEW API =================== */
 
   document.addEventListener("DOMContentLoaded", () => {
     const root = document.getElementById("add_source_view");
@@ -810,6 +907,7 @@ interface Nodes {
       byPlatform: (platform) => store.sources.filter((source) => source.platform === platform),
       byCategory: (categoryId) =>
         store.sources.filter((source) => source.categoryId === categoryId),
+      reload: reloadFromBackend,
     });
   });
 })();
