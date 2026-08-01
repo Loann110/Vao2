@@ -75,6 +75,9 @@ function getCategoryName(categoryId, categories) {
   return category?.name || "General";
 }
 
+let feedArticles = [];
+let feedLoaded = false;
+
 function renderForYouContent() {
   const content = document.getElementById("content");
   const filter = document.getElementById("feed_category_filter");
@@ -83,13 +86,13 @@ function renderForYouContent() {
 
   if (!content) return;
 
-  const { categories, sources } = readSourcesStore();
+  const { categories } = readSourcesStore();
   const selectedCategory = filter?.value || "all";
   const searchValue = searchInput?.value?.trim().toLowerCase() || "";
 
-  const filteredSources = sources.filter((source) => {
-    const matchesCategory = selectedCategory === "all" || source.categoryId === selectedCategory;
-    const haystack = `${source.title || ""} ${source.subtitle || ""} ${source.url || ""}`.toLowerCase();
+  const filteredArticles = feedArticles.filter((article) => {
+    const matchesCategory = selectedCategory === "all" || article.category_id === selectedCategory;
+    const haystack = `${article.title || ""} ${article.summary || ""} ${article.source_title || ""}`.toLowerCase();
     const matchesSearch = !searchValue || haystack.includes(searchValue);
     return matchesCategory && matchesSearch;
   });
@@ -117,11 +120,13 @@ function renderForYouContent() {
     }
   }
 
-  if (!filteredSources.length) {
+  if (!filteredArticles.length) {
     content.innerHTML = "";
     content.className = "empty";
     if (notice) {
-      notice.textContent = "No sources match the current filter.";
+      notice.textContent = feedLoaded
+        ? "No articles yet. Click Refresh to fetch the latest updates."
+        : "Loading articles...";
       notice.hidden = false;
     }
     return;
@@ -135,37 +140,46 @@ function renderForYouContent() {
   const list = document.createElement("div");
   list.className = "feed_list";
 
-  filteredSources.forEach((source) => {
+  filteredArticles.forEach((article) => {
     const card = document.createElement("article");
     card.className = "feed_card";
+
+    if (article.image_url) {
+      const image = document.createElement("img");
+      image.className = "feed_card_image";
+      image.src = article.image_url;
+      image.alt = "";
+      image.loading = "lazy";
+      card.appendChild(image);
+    }
 
     const header = document.createElement("div");
     header.className = "feed_card_header";
 
     const platform = document.createElement("span");
     platform.className = "feed_card_platform";
-    platform.textContent = source.platform || "Source";
+    platform.textContent = `${article.platform || "Source"} · ${article.source_title || ""}`;
 
     const category = document.createElement("span");
     category.className = "feed_card_category";
-    category.textContent = getCategoryName(source.categoryId, categories) || "General";
+    category.textContent = getCategoryName(article.category_id, categories);
 
     header.append(platform, category);
 
     const title = document.createElement("h2");
     title.className = "feed_card_title";
-    title.textContent = source.title || "Untitled source";
+    title.textContent = article.title || "Untitled article";
 
     const subtitle = document.createElement("p");
     subtitle.className = "feed_card_subtitle";
-    subtitle.textContent = source.subtitle || source.url || "No description available";
+    subtitle.textContent = article.summary || "No description available";
 
     const link = document.createElement("a");
     link.className = "feed_card_link";
-    link.href = source.url;
+    link.href = article.url;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "Open";
+    link.textContent = "Read";
 
     card.append(header, title, subtitle, link);
     list.appendChild(card);
@@ -176,8 +190,38 @@ function renderForYouContent() {
   content.appendChild(list);
 }
 
-function refreshFeed() {
+async function loadArticles() {
+  const response = await fetch("/api/articles?limit=200", {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error(`Backend error ${response.status}`);
+  const payload = await response.json();
+  feedArticles = Array.isArray(payload.articles) ? payload.articles : [];
+  feedLoaded = true;
   renderForYouContent();
+}
+
+async function refreshFeed() {
+  const button = document.getElementById("refresh_button");
+  const notice = document.getElementById("notice");
+  if (button) button.disabled = true;
+  if (notice) {
+    notice.textContent = "Fetching latest updates...";
+    notice.hidden = false;
+  }
+
+  try {
+    const response = await fetch("/api/refresh", { method: "POST" });
+    if (!response.ok) throw new Error(`Backend error ${response.status}`);
+    await loadArticles();
+  } catch (error) {
+    if (notice) {
+      notice.textContent = error instanceof Error ? error.message : "Refresh failed";
+      notice.hidden = false;
+    }
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 window.refreshFeed = refreshFeed;
@@ -214,4 +258,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   renderForYouContent();
+  void loadArticles().catch(() => {
+    feedLoaded = true;
+    renderForYouContent();
+  });
 });

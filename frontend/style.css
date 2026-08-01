@@ -310,6 +310,13 @@ header {
   gap: 8px;
 }
 
+.feed_card_image {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .feed_card_header {
   display: flex;
   justify-content: space-between;
