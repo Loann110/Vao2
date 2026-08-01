@@ -262,7 +262,15 @@ interface Nodes {
       return null; // No backend reachable (file://, server down)
     }
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const payload: unknown = (response.headers.get("content-type") || "").includes("application/json")
+        ? await response.json()
+        : null;
+      if (isRecord(payload) && typeof payload.detail === "string") {
+        throw new Error(payload.detail);
+      }
+      return null;
+    }
     if (!(response.headers.get("content-type") || "").includes("application/json")) return null;
 
     const payload: unknown = await response.json();
@@ -383,7 +391,7 @@ interface Nodes {
     const category: Category = { id: newId("cat"), name: label };
     store.categories.push(category);
     writeStore();
-    void syncBackend("/categories", "POST", { name: category.name });
+    void syncBackend("/categories", "POST", { id: category.id, name: category.name });
     return category;
   }
 
@@ -430,6 +438,7 @@ interface Nodes {
     store.sources.push(source);
     writeStore();
     void syncBackend(isManual ? "/sources/manual" : "/sources", "POST", {
+      id: source.id,
       platform: source.platform,
       url: source.url,
       feed_url: source.feedUrl,

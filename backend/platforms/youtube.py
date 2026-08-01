@@ -1,54 +1,78 @@
 from datetime import datetime
 import json
+import re
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from xml.etree import ElementTree
 
 
-YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/search"
 YOUTUBE_FEED_URL = "https://www.youtube.com/feeds/videos.xml"
 TIMEOUT = 10
 
 
 def _get(url):
-    request = Request(url, headers={"User-Agent": "Vao2/1.0"})
+    request = Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (compatible; Vao2/1.0)",
+            "Accept-Language": "en,fr;q=0.8",
+        },
+    )
     with urlopen(request, timeout=TIMEOUT) as response:
         return response.read()
 
 
-def search_channels(query, api_key, limit=20):
+def _find_renderers(value):
+    renderers = []
+    if isinstance(value, dict):
+        if isinstance(value.get("channelRenderer"), dict):
+            renderers.append(value["channelRenderer"])
+        for child in value.values():
+            renderers.extend(_find_renderers(child))
+    elif isinstance(value, list):
+        for child in value:
+            renderers.extend(_find_renderers(child))
+    return renderers
+
+
+def _label(value):
+    if not isinstance(value, dict):
+        return ""
+    if value.get("simpleText"):
+        return value["simpleText"]
+    return "".join(run.get("text", "") for run in value.get("runs", []))
+
+
+def search_channels(query, limit=20):
     """Return YouTube channels matching a search query."""
-    params = urlencode(
-        {
-            "part": "snippet",
-            "type": "channel",
-            "maxResults": min(max(limit, 1), 50),
-            "q": query,
-            "key": api_key,
-        }
+    params = urlencode({"search_query": query, "sp": "EgIQAg=="})
+    page = _get(f"https://www.youtube.com/results?{params}").decode("utf-8", "replace")
+    match = re.search(
+        r"(?:var\s+)?ytInitialData\s*=\s*({.+?});\s*</script>",
+        page,
+        re.S,
     )
-    data = json.loads(_get(f"{YOUTUBE_API_URL}?{params}"))
+    if not match:
+        raise RuntimeError("YouTube returned no usable search results")
+
+    data = json.loads(match.group(1))
     channels = []
 
-    for item in data.get("items", []):
-        channel_id = item.get("id", {}).get("channelId")
+    for item in _find_renderers(data)[: min(max(limit, 1), 50)]:
+        channel_id = item.get("channelId")
         if not channel_id:
             continue
 
-        snippet = item.get("snippet", {})
-        thumbnails = snippet.get("thumbnails", {})
-        thumbnail = (
-            thumbnails.get("high")
-            or thumbnails.get("medium")
-            or thumbnails.get("default")
-            or {}
-        ).get("url", "")
+        thumbnails = item.get("thumbnail", {}).get("thumbnails", [])
+        thumbnail = thumbnails[-1].get("url", "") if thumbnails else ""
+        if thumbnail.startswith("//"):
+            thumbnail = f"https:{thumbnail}"
 
         channels.append(
             {
                 "channel_id": channel_id,
-                "title": snippet.get("title", ""),
-                "description": snippet.get("description", ""),
+                "title": _label(item.get("title")) or channel_id,
+                "description": _label(item.get("descriptionSnippet")),
                 "thumbnail": thumbnail,
                 "url": f"https://www.youtube.com/channel/{channel_id}",
                 "feed_url": f"{YOUTUBE_FEED_URL}?channel_id={channel_id}",
