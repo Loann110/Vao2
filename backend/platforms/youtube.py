@@ -68,11 +68,23 @@ def search_channels(query, limit=20):
         if thumbnail.startswith("//"):
             thumbnail = f"https:{thumbnail}"
 
+        count_labels = (
+            _label(item.get("subscriberCountText")),
+            _label(item.get("videoCountText")),
+        )
+        subscribers = next(
+            (label for label in count_labels if "subscriber" in label.lower()),
+            "Subscriber count hidden",
+        )
+        description = _label(item.get("descriptionSnippet"))
+        subtitle = " / ".join(value for value in (subscribers, description) if value)
+
         channels.append(
             {
                 "channel_id": channel_id,
                 "title": _label(item.get("title")) or channel_id,
-                "description": _label(item.get("descriptionSnippet")),
+                "subscribers": subscribers,
+                "description": subtitle,
                 "thumbnail": thumbnail,
                 "url": f"https://www.youtube.com/channel/{channel_id}",
                 "feed_url": f"{YOUTUBE_FEED_URL}?channel_id={channel_id}",
