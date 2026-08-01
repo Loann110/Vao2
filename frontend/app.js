@@ -24,8 +24,7 @@ function applyTheme(theme, animate = false) {
 }
 
 function toggleTheme() {
-  const nextTheme =
-    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
 
   applyTheme(nextTheme, true);
   localStorage.setItem(THEME_KEY, nextTheme);
@@ -51,6 +50,138 @@ function closeAddSource() {
   document.querySelector(".add_source_btn")?.focus();
 }
 
+function readSourcesStore() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("vao2-sources") || "null");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { categories: [], sources: [] };
+    }
+
+    const categories = Array.isArray(parsed.categories)
+      ? parsed.categories.filter((item) => item && typeof item === "object" && typeof item.name === "string")
+      : [];
+    const sources = Array.isArray(parsed.sources)
+      ? parsed.sources.filter((item) => item && typeof item === "object" && typeof item.url === "string")
+      : [];
+
+    return { categories, sources };
+  } catch {
+    return { categories: [], sources: [] };
+  }
+}
+
+function getCategoryName(categoryId, categories) {
+  const category = categories.find((item) => item.id === categoryId);
+  return category?.name || "General";
+}
+
+function renderForYouContent() {
+  const content = document.getElementById("content");
+  const filter = document.getElementById("feed_category_filter");
+  const searchInput = document.getElementById("feed_search");
+  const notice = document.getElementById("notice");
+
+  if (!content) return;
+
+  const { categories, sources } = readSourcesStore();
+  const selectedCategory = filter?.value || "all";
+  const searchValue = searchInput?.value?.trim().toLowerCase() || "";
+
+  const filteredSources = sources.filter((source) => {
+    const matchesCategory = selectedCategory === "all" || source.categoryId === selectedCategory;
+    const haystack = `${source.title || ""} ${source.subtitle || ""} ${source.url || ""}`.toLowerCase();
+    const matchesSearch = !searchValue || haystack.includes(searchValue);
+    return matchesCategory && matchesSearch;
+  });
+
+  if (filter) {
+    const currentValue = filter.value;
+    filter.replaceChildren();
+
+    const allOption = document.createElement("option");
+    allOption.value = "all";
+    allOption.textContent = "All categories";
+    filter.appendChild(allOption);
+
+    categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category.id;
+      option.textContent = category.name;
+      filter.appendChild(option);
+    });
+
+    if (categories.some((category) => category.id === currentValue) || currentValue === "all") {
+      filter.value = currentValue;
+    } else {
+      filter.value = "all";
+    }
+  }
+
+  if (!filteredSources.length) {
+    content.innerHTML = "";
+    content.className = "empty";
+    if (notice) {
+      notice.textContent = "No sources match the current filter.";
+      notice.hidden = false;
+    }
+    return;
+  }
+
+  if (notice) {
+    notice.textContent = "";
+    notice.hidden = true;
+  }
+
+  const list = document.createElement("div");
+  list.className = "feed_list";
+
+  filteredSources.forEach((source) => {
+    const card = document.createElement("article");
+    card.className = "feed_card";
+
+    const header = document.createElement("div");
+    header.className = "feed_card_header";
+
+    const platform = document.createElement("span");
+    platform.className = "feed_card_platform";
+    platform.textContent = source.platform || "Source";
+
+    const category = document.createElement("span");
+    category.className = "feed_card_category";
+    category.textContent = getCategoryName(source.categoryId, categories) || "General";
+
+    header.append(platform, category);
+
+    const title = document.createElement("h2");
+    title.className = "feed_card_title";
+    title.textContent = source.title || "Untitled source";
+
+    const subtitle = document.createElement("p");
+    subtitle.className = "feed_card_subtitle";
+    subtitle.textContent = source.subtitle || source.url || "No description available";
+
+    const link = document.createElement("a");
+    link.className = "feed_card_link";
+    link.href = source.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open";
+
+    card.append(header, title, subtitle, link);
+    list.appendChild(card);
+  });
+
+  content.className = "";
+  content.innerHTML = "";
+  content.appendChild(list);
+}
+
+function refreshFeed() {
+  renderForYouContent();
+}
+
+window.refreshFeed = refreshFeed;
+
 document.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem(THEME_KEY);
   const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -64,9 +195,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.target === modal) closeAddSource();
   });
 
+  const filter = document.getElementById("feed_category_filter");
+  filter?.addEventListener("change", renderForYouContent);
+
+  const searchInput = document.getElementById("feed_search");
+  searchInput?.addEventListener("input", renderForYouContent);
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && modal?.classList.contains("open")) {
       closeAddSource();
     }
   });
+
+  window.addEventListener("navigationchange", () => {
+    if (document.body.dataset.view !== "add-source") {
+      renderForYouContent();
+    }
+  });
+
+  renderForYouContent();
 });
