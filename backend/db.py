@@ -49,6 +49,8 @@ def init_db():
                 author TEXT NOT NULL DEFAULT '',
                 media_type TEXT NOT NULL DEFAULT '',
                 media_url TEXT NOT NULL DEFAULT '',
+                content TEXT NOT NULL DEFAULT '',
+                content_source TEXT NOT NULL DEFAULT '',
                 published_at TEXT,
                 UNIQUE (source_id, guid),
                 FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE
@@ -59,6 +61,16 @@ def init_db():
             "INSERT OR IGNORE INTO categories (id, name) VALUES (?, ?)",
             (GENERAL_CATEGORY_ID, "General"),
         )
+        article_columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(articles)").fetchall()
+        }
+        if "content" not in article_columns:
+            connection.execute("ALTER TABLE articles ADD COLUMN content TEXT NOT NULL DEFAULT ''")
+        if "content_source" not in article_columns:
+            connection.execute(
+                "ALTER TABLE articles ADD COLUMN content_source TEXT NOT NULL DEFAULT ''"
+            )
 
 
 def _rows(query, values=()):
@@ -217,3 +229,22 @@ def list_articles(limit=100):
            ORDER BY published_at IS NULL, published_at DESC, articles.id DESC LIMIT ?""",
         (limit,),
     )
+
+
+def get_article(article_id):
+    rows = _rows(
+        """SELECT articles.*, sources.title AS source_title,
+                  sources.platform, sources.category_id
+           FROM articles JOIN sources ON sources.id = articles.source_id
+           WHERE articles.id = ?""",
+        (article_id,),
+    )
+    return rows[0] if rows else None
+
+
+def save_article_content(article_id, content, content_source):
+    with _connect() as connection:
+        connection.execute(
+            "UPDATE articles SET content = ?, content_source = ? WHERE id = ?",
+            (content, content_source, article_id),
+        )

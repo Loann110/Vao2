@@ -477,9 +477,31 @@ header {
 }
 
 .feed_card_link {
-  align-self: flex-start;
   color: var(--accent);
   font-weight: 600;
+}
+
+.feed_card_actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feed_card_summarize {
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--hover);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.feed_card_summarize:hover,
+.feed_card_summarize.is_active {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .feed_card_platform,

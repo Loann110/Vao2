@@ -337,9 +337,21 @@ function renderForYouContent() {
     link.rel = "noopener noreferrer";
     link.textContent = "Read";
 
+    const summarize = document.createElement("button");
+    summarize.type = "button";
+    summarize.className = "feed_card_summarize";
+    summarize.textContent = "Summarize";
+    summarize.dataset.iaArticleUrl = `/api/articles/${article.id}`;
+    summarize.dataset.iaDetailsUrl = `/api/articles/${article.id}/summary`;
+    summarize.dataset.iaDetailsMethod = "POST";
+
+    const actions = document.createElement("div");
+    actions.className = "feed_card_actions";
+    actions.append(link, summarize);
+
     const details = document.createElement("div");
     details.className = "feed_card_content";
-    details.append(header, title, subtitle, link);
+    details.append(header, title, subtitle, actions);
     card.appendChild(details);
 
     if (isYouTube) {

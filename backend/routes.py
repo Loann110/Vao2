@@ -8,6 +8,8 @@ from pydantic import BaseModel
 from backend import db
 from backend.feeds.feeds import fetch_feed
 from backend.llm.llm import status as llm_status
+from backend.llm.llm import short_summary
+from backend.llm.context import article_context
 from backend.platforms.news import search_outlets
 from backend.platforms.youtube import search_channels
 
@@ -137,3 +139,54 @@ async def refresh_sources():
 @router.get("/articles")
 def get_articles(limit: int = Query(100, ge=1, le=500)):
     return {"articles": db.list_articles(limit)}
+
+
+@router.get("/articles/{article_id}")
+def get_article(article_id: int):
+    article = db.get_article(article_id)
+    if not article:
+        raise HTTPException(404, "Article not found")
+    article["source_name"] = article["source_title"]
+    article["category"] = article["category_id"]
+    return {"article": article}
+
+
+@router.post("/articles/{article_id}/summary")
+async def summarize_article(article_id: int):
+    article = db.get_article(article_id)
+    if not article:
+        raise HTTPException(404, "Article not found")
+
+    content = article.get("content", "")
+    content_source = article.get("content_source", "")
+    if not content:
+        content, content_source = await run_in_threadpool(article_context, article)
+        await run_in_threadpool(
+            db.save_article_content,
+            article_id,
+            content,
+            content_source,
+        )
+
+    synthesis, generated_by_ai = await run_in_threadpool(
+        short_summary,
+        article["title"],
+        content,
+    )
+    return {
+        "details": {
+            "synthesis": synthesis,
+            "key_points": [],
+            "entities": [],
+            "related": [],
+            "generated_by_ai": generated_by_ai,
+            "content_source": content_source,
+            "sources_used": [
+                {
+                    "source": article["source_title"],
+                    "title": article["title"],
+                    "url": article["url"],
+                }
+            ],
+        }
+    }

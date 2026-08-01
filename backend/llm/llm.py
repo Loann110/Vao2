@@ -8,8 +8,8 @@ OLLAMA_MODEL = os.environ.get("VAO2_OLLAMA_MODEL", "qwen2.5:3b")
 OLLAMA_TIMEOUT = float(os.environ.get("VAO2_OLLAMA_TIMEOUT", "60"))
 
 SYSTEM_PROMPT = (
-    "Tu es un assistant de synthese d'actualites. Reponds uniquement en francais, "
-    "utilise seulement les informations fournies et n'invente aucun fait."
+    "You are a news summarization assistant. Respond only in English, "
+    "use only the provided information, and do not invent any facts."
 )
 
 
@@ -54,12 +54,14 @@ def generate(prompt, json_mode=False):
 
 
 def short_summary(title, text):
-    """Return a short French summary and whether Ollama generated it."""
+    """Return a short English summary and whether Ollama generated it."""
     text = (text or "").strip()
     if text and status()["available"]:
         summary = generate(
-            "Resume cette actualite en deux phrases et moins de 45 mots.\n\n"
-            f"Titre: {title}\n\nTexte: {text[:3000]}"
+            "Respond only in English. Summarize this news item in two to four "
+            "factual sentences and fewer than 80 words. Do not include any "
+            "information that is absent from the provided text.\n\n"
+            f"Title: {title}\n\nText: {text[:10000]}"
         )
         if summary:
             return summary, True
