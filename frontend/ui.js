@@ -4,7 +4,6 @@ const NAV_ITEMS = [
   { type: "title", label: "Sources" },
   { id: "youtube", label: "YouTube", icon: "youtube", subtitle: "Latest videos from your channels" },
   { id: "github", label: "GitHub", icon: "github", subtitle: "Repositories and releases you follow" },
-  { id: "reddit", label: "Reddit", icon: "reddit", subtitle: "Posts from your communities" },
   { id: "news", label: "News", icon: "news", subtitle: "Your selected news sources" },
   { id: "podcast", label: "Podcasts", icon: "podcast", subtitle: "Your latest podcast episodes" },
   { id: "rss", label: "RSS feeds", icon: "rss", subtitle: "Updates from your RSS feeds" },
@@ -70,16 +69,6 @@ function platformLogo(kind, extraClass = "") {
         svgNode("rect", { x: 1, y: 1, width: 22, height: 22, rx: 6, fill: "currentColor" }),
         svgNode("path", { d: "M12 6.2a4.3 4.3 0 0 1 4.3 4.3c0 1.7-1 3.2-2.4 3.9l.9 4.3a1 1 0 0 1-1 1.2h-3.6a1 1 0 0 1-1-1.2l.9-4.3a4.3 4.3 0 0 1 1.9-8.2Z", fill: "#fff" }),
         svgNode("circle", { cx: 12, cy: 10.4, r: 1.9, fill: "currentColor" }),
-      );
-    } else if (kind === "reddit") {
-      svg.append(
-        svgNode("circle", { cx: 12, cy: 12, r: 11, fill: "currentColor" }),
-        svgNode("ellipse", { cx: 12, cy: 13.6, rx: 6.2, ry: 4.4, fill: "#fff" }),
-        svgNode("circle", { cx: 9.4, cy: 13, r: 1.1, fill: "currentColor" }),
-        svgNode("circle", { cx: 14.6, cy: 13, r: 1.1, fill: "currentColor" }),
-        svgNode("path", { d: "M9.6 16.1c1.5 1 3.3 1 4.8 0", fill: "none", stroke: "currentColor", "stroke-width": 1.1, "stroke-linecap": "round" }),
-        svgNode("circle", { cx: 17.6, cy: 8.3, r: 1.4, fill: "#fff" }),
-        svgNode("path", { d: "M12.6 9.3 13.5 5l3.4.9", fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-linecap": "round" }),
       );
     } else if (kind === "news") {
       svg.append(

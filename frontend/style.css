@@ -201,7 +201,6 @@ nav {
 .platform-logo.home { color: var(--accent); }
 .platform-logo.youtube { color: #ff0033; }
 .platform-logo.github { color: var(--text); }
-.platform-logo.reddit { color: #ff4500; }
 .platform-logo.rss { color: #f26522; }
 .platform-logo.podcast { color: #8b5cf6; }
 .platform-logo.add { color: var(--accent); }

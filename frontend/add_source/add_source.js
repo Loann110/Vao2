@@ -9,7 +9,6 @@
         { id: "news", label: "News", placeholder: "Search for an outlet or a topic..." },
         { id: "youtube", label: "YouTube", placeholder: "Search for a channel or a topic..." },
         { id: "github", label: "GitHub", placeholder: "Search for a repository, organization or account..." },
-        { id: "reddit", label: "Reddit", placeholder: "Search for a community or a topic..." },
         { id: "rss", label: "RSS feed", placeholder: "Enter a feed or website URL..." },
         { id: "podcast", label: "Podcast", placeholder: "Search for a podcast or a topic..." },
     ];
