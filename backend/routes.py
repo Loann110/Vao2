@@ -11,6 +11,7 @@ from backend.llm.llm import status as llm_status
 from backend.llm.llm import short_summary
 from backend.llm.context import article_context
 from backend.platforms.news import search_outlets
+from backend.platforms.github import search_repositories
 from backend.platforms.youtube import search_channels
 
 
@@ -52,6 +53,13 @@ async def search(platform: str, q: str = Query(min_length=2)):
             results = await run_in_threadpool(search_channels, q)
         except Exception as error:
             raise HTTPException(502, f"YouTube search failed: {error}") from error
+        return {"results": results}
+
+    if platform == "github":
+        try:
+            results = await run_in_threadpool(search_repositories, q)
+        except httpx.HTTPError as error:
+            raise HTTPException(502, f"GitHub search failed: {error}") from error
         return {"results": results}
 
     if platform in {"rss", "podcast"} and q.startswith(("http://", "https://")):

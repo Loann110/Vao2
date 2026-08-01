@@ -215,11 +215,11 @@
             .filter((item) => item !== null);
     }
     async function searchSources(platform, query, signal) {
-        if (platform === "github")
-            return searchGithub(query, signal);
         const fromBackend = await searchBackend(platform, query, signal);
         if (fromBackend)
             return fromBackend;
+        if (platform === "github")
+            return searchGithub(query, signal);
         throw new Error(`${platformLabel(platform)} search needs the backend at ${API_BASE_URL}/search, which isn't answering. Add the URL by hand below.`);
     }
     async function runSearch(query) {
