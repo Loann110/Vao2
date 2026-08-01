@@ -89,12 +89,14 @@ function renderForYouContent() {
   const { categories } = readSourcesStore();
   const selectedCategory = filter?.value || "all";
   const searchValue = searchInput?.value?.trim().toLowerCase() || "";
+  const currentView = document.body.dataset.view || "all";
 
   const filteredArticles = feedArticles.filter((article) => {
+    const matchesPlatform = currentView === "all" || article.platform === currentView;
     const matchesCategory = selectedCategory === "all" || article.category_id === selectedCategory;
     const haystack = `${article.title || ""} ${article.summary || ""} ${article.source_title || ""}`.toLowerCase();
     const matchesSearch = !searchValue || haystack.includes(searchValue);
-    return matchesCategory && matchesSearch;
+    return matchesPlatform && matchesCategory && matchesSearch;
   });
 
   if (filter) {
