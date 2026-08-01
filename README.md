@@ -4,9 +4,7 @@
 
 <div align="center">
 
-# Vao2
-
-**Your personal feed for News, YouTube, GitHub and RSS, powered by local AI.**
+**Your personal feed for News, YouTube, GitHub and more, powered by local AI.**
 
 [![Python](https://img.shields.io/badge/Python-3.10+-8b5cf6?logo=python&logoColor=242424&labelColor=ddcff4)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-API-8b5cf6?logo=fastapi&logoColor=242424&labelColor=ddcff4)](https://fastapi.tiangolo.com/)
