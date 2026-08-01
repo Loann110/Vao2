@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="104" viewBox="0 0 320 104" role="img" aria-labelledby="title description">
+  <title id="title">Vao2</title>
+  <desc id="description">Vao2 logo using the application accent color and glow</desc>
+  <defs>
+    <filter id="text-glow" x="-30%" y="-50%" width="160%" height="200%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#8b5cf6" flood-opacity="0.5"/>
+    </filter>
+    <filter id="dot-glow" x="-150%" y="-150%" width="400%" height="400%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g fill="#8b5cf6">
+    <text x="150" y="75" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="72" font-weight="800" filter="url(#text-glow)">Vao2</text>
+    <circle cx="246" cy="68" r="6" filter="url(#dot-glow)"/>
+  </g>
+</svg>

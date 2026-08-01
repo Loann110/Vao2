@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timezone
+from html import unescape
 
 import feedparser
 import httpx
@@ -16,7 +17,8 @@ YOUTUBE_PATTERN = re.compile(
 
 
 def _clean(value, limit=400):
-    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", value or "")).strip()
+    value = unescape(value or "").replace("\xa0\xa0", " - ")
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", value)).strip()
     return text if len(text) <= limit else f"{text[:limit].rsplit(' ', 1)[0]}..."
 
 
