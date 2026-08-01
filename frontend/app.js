@@ -75,6 +75,29 @@ function getCategoryName(categoryId, categories) {
   return category?.name || "General";
 }
 
+async function updateLlmStatus() {
+  const status = document.getElementById("llm_status");
+  const label = document.getElementById("llm_status_label");
+  if (!status || !label) return;
+
+  status.className = "llm_status is_checking";
+  label.textContent = "Checking local model...";
+  try {
+    const response = await fetch("/api/llm/status", {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error();
+    const payload = await response.json();
+    status.className = `llm_status ${payload.available ? "is_available" : "is_unavailable"}`;
+    label.textContent = payload.available
+      ? `${payload.model} available`
+      : `${payload.model} unavailable`;
+  } catch {
+    status.className = "llm_status is_unavailable";
+    label.textContent = "Local model unavailable";
+  }
+}
+
 let feedArticles = [];
 let feedLoaded = false;
 let youtubePlayers = [];
@@ -448,11 +471,10 @@ window.refreshFeed = refreshFeed;
 
 document.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem(THEME_KEY);
-  const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
 
-  applyTheme(savedTheme || preferredTheme);
+  applyTheme(savedTheme || "dark");
+  void updateLlmStatus();
+  window.setInterval(updateLlmStatus, 30000);
 
   const modal = document.getElementById("add_source_modal");
   modal?.addEventListener("click", (event) => {

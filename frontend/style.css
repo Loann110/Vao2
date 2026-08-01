@@ -310,6 +310,41 @@ header {
   gap: 8px;
 }
 
+.llm_status {
+  min-height: 30px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.llm_status_dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+
+.llm_status.is_available .llm_status_dot {
+  background: #22c55e;
+}
+
+.llm_status.is_unavailable .llm_status_dot {
+  background: #ef4444;
+}
+
+.llm_status.is_checking .llm_status_dot {
+  animation: llm_status_pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes llm_status_pulse {
+  to { opacity: .35; }
+}
+
 .feed_card_image {
   width: 100%;
   max-height: 320px;

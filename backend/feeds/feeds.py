@@ -30,9 +30,24 @@ def _published(entry):
 
 def _summary(entry):
     content = entry.get("content")
-    if content:
-        return _clean(content[0].get("value", ""))
-    return _clean(entry.get("summary", ""))
+    value = content[0].get("value", "") if content else entry.get("summary", "")
+
+    if entry.get("yt_videoid"):
+        lowered = value.lower()
+        markers = (
+            "tts donations",
+            "follow me",
+            "merch",
+            "memberships",
+            "streamlabs.com",
+            "instagram.com",
+            "snapchat.com",
+        )
+        positions = [lowered.find(marker) for marker in markers if marker in lowered]
+        if positions:
+            value = value[: min(positions)]
+
+    return _clean(value)
 
 
 def _image(entry):

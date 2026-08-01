@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from backend import db
 from backend.feeds.feeds import fetch_feed
+from backend.llm.llm import status as llm_status
 from backend.platforms.news import search_outlets
 from backend.platforms.youtube import search_channels
 
@@ -32,6 +33,11 @@ class SourceInput(BaseModel):
 
 class CategoryUpdate(BaseModel):
     category_id: str
+
+
+@router.get("/llm/status")
+async def get_llm_status():
+    return await run_in_threadpool(llm_status)
 
 
 @router.get("/search")

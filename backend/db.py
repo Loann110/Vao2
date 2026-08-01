@@ -175,7 +175,27 @@ def save_articles(source_id, articles):
                     article.get("published_at"),
                 ),
             )
-            added += cursor.rowcount
+            if cursor.rowcount:
+                added += 1
+            else:
+                connection.execute(
+                    """UPDATE articles
+                       SET url = ?, title = ?, summary = ?, image_url = ?, author = ?,
+                           media_type = ?, media_url = ?, published_at = ?
+                       WHERE source_id = ? AND guid = ?""",
+                    (
+                        article["url"],
+                        article["title"],
+                        article.get("summary", ""),
+                        article.get("image_url", ""),
+                        article.get("author", ""),
+                        article.get("media_type", ""),
+                        article.get("media_url", ""),
+                        article.get("published_at"),
+                        source_id,
+                        article["guid"],
+                    ),
+                )
     return added
 
 
