@@ -77,6 +77,95 @@ function getCategoryName(categoryId, categories) {
 
 let feedArticles = [];
 let feedLoaded = false;
+let youtubePlayers = [];
+let youtubeProgressTimers = [];
+let youtubeRenderVersion = 0;
+
+function loadYouTubeApi() {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+
+  return new Promise((resolve) => {
+    const previousCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previousCallback?.();
+      resolve(window.YT);
+    };
+
+    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      const script = document.createElement("script");
+      script.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(script);
+    }
+  });
+}
+
+function formatVideoTime(seconds) {
+  const value = Math.max(0, Math.floor(seconds || 0));
+  const minutes = Math.floor(value / 60);
+  return `${minutes}:${String(value % 60).padStart(2, "0")}`;
+}
+
+async function connectYouTubePlayers(version) {
+  const YT = await loadYouTubeApi();
+  if (version !== youtubeRenderVersion) return;
+
+  document.querySelectorAll(".feed_card_player").forEach((iframe) => {
+    const controls = iframe.closest(".feed_card_video")?.querySelector(".feed_player_controls");
+    const progress = controls?.querySelector(".feed_player_progress");
+    const playButton = controls?.querySelector('[data-action="toggle"]');
+    const muteButton = controls?.querySelector('[data-action="mute"]');
+    const volume = controls?.querySelector(".feed_player_volume");
+    const time = controls?.querySelector(".feed_player_time");
+    const player = new YT.Player(iframe, {
+      events: {
+        onReady() {
+          progress?.addEventListener("input", () => {
+            const duration = player.getDuration();
+            if (duration) player.seekTo(duration * Number(progress.value) / 100, true);
+          });
+          volume?.addEventListener("input", () => {
+            player.setVolume(Number(volume.value));
+            if (Number(volume.value) > 0) player.unMute();
+          });
+          controls?.addEventListener("click", (event) => {
+            const button = event.target.closest("button[data-action]");
+            if (!button) return;
+            if (button.dataset.action === "mute") {
+              if (player.isMuted()) player.unMute();
+              else player.mute();
+              muteButton.textContent = player.isMuted() ? "Unmute" : "Mute";
+            } else if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+              player.pauseVideo();
+            } else {
+              player.playVideo();
+            }
+          });
+
+          const timer = window.setInterval(() => {
+            const duration = player.getDuration();
+            if (progress && duration) {
+              progress.value = String(player.getCurrentTime() / duration * 100);
+            }
+            if (time) {
+              time.textContent = `${formatVideoTime(player.getCurrentTime())} / ${formatVideoTime(duration)}`;
+            }
+          }, 500);
+          youtubeProgressTimers.push(timer);
+        },
+        onStateChange(event) {
+          const isPlaying = event.data === YT.PlayerState.PLAYING;
+          if (playButton) playButton.textContent = isPlaying ? "Pause" : "Play";
+          if (isPlaying) {
+            youtubePlayers.forEach((otherPlayer) => {
+              if (otherPlayer !== event.target) otherPlayer.pauseVideo();
+            });
+          }
+        },
+      },
+    });
+    youtubePlayers.push(player);
+  });
+}
 
 function renderForYouContent() {
   const content = document.getElementById("content");
@@ -85,6 +174,13 @@ function renderForYouContent() {
   const notice = document.getElementById("notice");
 
   if (!content) return;
+
+  youtubeRenderVersion += 1;
+  youtubePlayers.forEach((player) => player.destroy?.());
+  youtubeProgressTimers.forEach((timer) => window.clearInterval(timer));
+  youtubePlayers = [];
+  youtubeProgressTimers = [];
+  const renderVersion = youtubeRenderVersion;
 
   const { categories } = readSourcesStore();
   const selectedCategory = filter?.value || "all";
@@ -145,11 +241,19 @@ function renderForYouContent() {
   filteredArticles.forEach((article) => {
     const card = document.createElement("article");
     card.className = "feed_card";
+    const isYouTube = article.platform === "youtube" && article.media_url;
+    if (isYouTube) card.classList.add("is_youtube");
 
-    if (article.image_url) {
+    if (article.image_url && !isYouTube) {
       const image = document.createElement("img");
       image.className = "feed_card_image";
-      image.src = article.image_url;
+      const fallbackImage = article.image_url;
+      image.src = article.platform === "youtube"
+        ? fallbackImage.replace(/\/hqdefault\.jpg(?:\?.*)?$/, "/maxresdefault.jpg")
+        : fallbackImage;
+      image.addEventListener("error", () => {
+        if (image.src !== fallbackImage) image.src = fallbackImage;
+      }, { once: true });
       image.alt = "";
       image.loading = "lazy";
       card.appendChild(image);
@@ -183,13 +287,85 @@ function renderForYouContent() {
     link.rel = "noopener noreferrer";
     link.textContent = "Read";
 
-    card.append(header, title, subtitle, link);
+    const details = document.createElement("div");
+    details.className = "feed_card_content";
+    details.append(header, title, subtitle, link);
+    card.appendChild(details);
+
+    if (isYouTube) {
+      const player = document.createElement("iframe");
+      player.className = "feed_card_player";
+      const playerUrl = new URL(article.media_url);
+      playerUrl.searchParams.set("enablejsapi", "1");
+      playerUrl.searchParams.set("controls", "0");
+      playerUrl.searchParams.set("disablekb", "1");
+      playerUrl.searchParams.set("fs", "0");
+      playerUrl.searchParams.set("iv_load_policy", "3");
+      playerUrl.searchParams.set("playsinline", "1");
+      playerUrl.searchParams.set("rel", "0");
+      if (window.location.origin !== "null") {
+        playerUrl.searchParams.set("origin", window.location.origin);
+      }
+      player.src = playerUrl.toString();
+      player.title = `Play ${article.title || "YouTube video"}`;
+      player.loading = "lazy";
+      player.tabIndex = -1;
+      player.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      player.allowFullscreen = true;
+      player.referrerPolicy = "strict-origin-when-cross-origin";
+
+      const video = document.createElement("div");
+      video.className = "feed_card_video";
+      const controls = document.createElement("div");
+      controls.className = "feed_player_controls";
+      const progress = document.createElement("input");
+      progress.className = "feed_player_progress";
+      progress.type = "range";
+      progress.min = "0";
+      progress.max = "100";
+      progress.step = "0.1";
+      progress.value = "0";
+      progress.setAttribute("aria-label", "Video progress");
+      const actions = document.createElement("div");
+      actions.className = "feed_player_actions";
+
+      const play = document.createElement("button");
+      play.type = "button";
+      play.dataset.action = "toggle";
+      play.textContent = "Play";
+
+      const mute = document.createElement("button");
+      mute.type = "button";
+      mute.dataset.action = "mute";
+      mute.textContent = "Mute";
+
+      const volume = document.createElement("input");
+      volume.className = "feed_player_volume";
+      volume.type = "range";
+      volume.min = "0";
+      volume.max = "100";
+      volume.value = "100";
+      volume.setAttribute("aria-label", "Volume");
+
+      const time = document.createElement("span");
+      time.className = "feed_player_time";
+      time.textContent = "0:00 / 0:00";
+
+      actions.append(play, mute, volume, time);
+      controls.append(progress, actions);
+      video.append(player, controls);
+      card.appendChild(video);
+    }
+
     list.appendChild(card);
   });
 
   content.className = "";
   content.innerHTML = "";
   content.appendChild(list);
+  if (list.querySelector(".feed_card_player")) {
+    void connectYouTubePlayers(renderVersion);
+  }
 }
 
 async function loadArticles() {
