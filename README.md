@@ -42,6 +42,28 @@ https://github.com/user-attachments/assets/4d5ebcee-5662-4bc4-b461-e677872edec3
 
 Contributions, feedback and bug reports are welcome.
 
+Vao2 will eventually be available as a dedicated Windows, macOS and Linux app. A browser
+extension and a mobile app are also being considered for future releases.
+
+## Quick start
+
+Windows:
+
+```bat
+scripts\setup.bat
+scripts\start.bat
+```
+
+macOS / Linux:
+
+```bash
+chmod +x scripts/*.sh
+./scripts/setup.sh
+./scripts/start.sh
+```
+
+Then open http://127.0.0.1:8000.
+
 ## Contributing
 
 1. Open an issue to describe the change or bug.
