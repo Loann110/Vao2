@@ -37,7 +37,7 @@ body {
   min-height: 100vh;
   margin: 0;
   color: var(--text);
-  background: radial-gradient(circle at 85% 0, #6254d914, transparent 26rem), var(--bg);
+  background: var(--bg);
   font: 14px/1.5 "Segoe UI", Arial, sans-serif;
 }
 
@@ -294,6 +294,7 @@ header {
   margin: -16px 0 18px;
   padding: 16px 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
@@ -535,9 +536,21 @@ header {
 }
 
 .tools {
-  display: flex;
-  justify-content: flex-end;
+  min-width: 0;
+  flex: 1 1 500px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr)) auto;
   gap: 8px;
+}
+
+.tools .input {
+  width: 100%;
+  min-width: 0;
+}
+
+.tools .btn_primary {
+  min-width: max-content;
+  height: 42px;
 }
 
 .input,

@@ -168,6 +168,21 @@
     grid-template-columns: 248px minmax(0, 1fr);
   }
 
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tools,
+  .tools .input {
+    width: 100%;
+  }
+
+  .tools .input {
+    min-width: 0;
+    flex: 1;
+  }
+
   #ia_box {
     position: static;
     grid-column: 2;
@@ -219,10 +234,6 @@
   }
 
   main { padding: 28px 18px 70px; }
-  header { align-items: flex-start; flex-direction: column; }
-  .tools, .tools .input { width: 100%; }
-  .tools .input { min-width: 0; flex: 1; }
-
   #ia_box { padding: 0 18px 70px; }
 }
 
@@ -231,11 +242,13 @@
   #title { font-size: 30px; }
 
   .tools {
-    display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .tools .input { grid-column: 1/-1; }
+  .tools .input,
+  .tools .btn_primary {
+    width: 100%;
+  }
   .article_image { height: 180px; }
   .card_body { padding: 16px; }
   .add_source_content { padding: 20px; }
