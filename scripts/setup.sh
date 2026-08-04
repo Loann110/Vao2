@@ -16,7 +16,8 @@ fi
 
 "$PYTHON" -m venv .venv
 "$ROOT/.venv/bin/python" -m pip install --upgrade pip
-"$ROOT/.venv/bin/python" -m pip install -r backend/requirements.txt
+"$ROOT/.venv/bin/python" -m pip install -r backend/requirements.txt \
+    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
 
 echo
 echo "Setup complete. Run ./scripts/start.sh to start Vao2."

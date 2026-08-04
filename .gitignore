@@ -1,2 +1,10 @@
 .venv/
 .env
+models/*.gguf
+models/.cache/
+
+frontend/ia_box/tsconfig.ia_box.json
+frontend/ia_box/ia_box.ts
+
+frontend/add_source/tsconfig.add_source.json
+frontend/add_source/add_source.ts

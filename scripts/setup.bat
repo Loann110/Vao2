@@ -16,7 +16,7 @@ if errorlevel 1 goto :error
 ".venv\Scripts\python.exe" -m pip install --upgrade pip
 if errorlevel 1 goto :error
 
-".venv\Scripts\python.exe" -m pip install -r backend\requirements.txt
+".venv\Scripts\python.exe" -m pip install -r backend\requirements.txt --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
 if errorlevel 1 goto :error
 
 echo.
