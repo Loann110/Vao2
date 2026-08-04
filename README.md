@@ -11,7 +11,6 @@
 [![SQLite](https://img.shields.io/badge/SQLite-Storage-8b5cf6?logo=sqlite&logoColor=242424&labelColor=ddcff4)](https://www.sqlite.org/)
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-Local_AI-8b5cf6?logo=cplusplus&logoColor=242424&labelColor=ddcff4)](https://github.com/ggml-org/llama.cpp)
 [![JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-8b5cf6?logo=javascript&logoColor=242424&labelColor=ddcff4)](https://developer.mozilla.org/docs/Web/JavaScript)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Typed_UI-8b5cf6?logo=typescript&logoColor=242424&labelColor=ddcff4)](https://www.typescriptlang.org/)
 </div> 
 
 ---
