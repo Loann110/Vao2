@@ -5,8 +5,8 @@ from huggingface_hub import hf_hub_download
 
 ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = ROOT / "models"
-REPOSITORY = "Qwen/Qwen2.5-0.5B-Instruct-GGUF"
-FILENAME = "qwen2.5-0.5b-instruct-q4_k_m.gguf"
+REPOSITORY = "Qwen/Qwen2.5-1.5B-Instruct-GGUF"
+FILENAME = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
 
 
 def main():

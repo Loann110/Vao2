@@ -82,15 +82,15 @@ macOS / Linux:
 ```
 
 The default model is stored at
-`models/qwen2.5-0.5b-instruct-q4_k_m.gguf`. This 0.5B Q4 model is selected so
-Vao2 remains usable on old CPU-only computers with limited memory. Runtime
+`models/qwen2.5-1.5b-instruct-q4_k_m.gguf`. This 1.5B Q4 model provides a
+better balance between summary quality and CPU performance. Runtime
 settings can be overridden with:
 
 - `VAO2_MODEL_PATH`: path to another GGUF model;
-- `VAO2_MODEL_CONTEXT`: context size, default `2048` to limit memory use;
+- `VAO2_MODEL_CONTEXT`: context size, default `1536` to balance quality and latency;
 - `VAO2_MODEL_THREADS`: CPU thread count;
 - `VAO2_MODEL_GPU_LAYERS`: GPU-offloaded layers, default `0` for CPU;
-- `VAO2_MODEL_MAX_TOKENS`: generation limit, default `300`.
+- `VAO2_MODEL_MAX_TOKENS`: generation limit, default `120`.
 
 ## Contributing
 

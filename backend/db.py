@@ -51,6 +51,9 @@ def init_db():
                 media_url TEXT NOT NULL DEFAULT '',
                 content TEXT NOT NULL DEFAULT '',
                 content_source TEXT NOT NULL DEFAULT '',
+                ai_summary TEXT NOT NULL DEFAULT '',
+                ai_summary_model TEXT NOT NULL DEFAULT '',
+                ai_summary_updated_at TEXT,
                 published_at TEXT,
                 UNIQUE (source_id, guid),
                 FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE
@@ -70,6 +73,18 @@ def init_db():
         if "content_source" not in article_columns:
             connection.execute(
                 "ALTER TABLE articles ADD COLUMN content_source TEXT NOT NULL DEFAULT ''"
+            )
+        if "ai_summary" not in article_columns:
+            connection.execute(
+                "ALTER TABLE articles ADD COLUMN ai_summary TEXT NOT NULL DEFAULT ''"
+            )
+        if "ai_summary_model" not in article_columns:
+            connection.execute(
+                "ALTER TABLE articles ADD COLUMN ai_summary_model TEXT NOT NULL DEFAULT ''"
+            )
+        if "ai_summary_updated_at" not in article_columns:
+            connection.execute(
+                "ALTER TABLE articles ADD COLUMN ai_summary_updated_at TEXT"
             )
 
 
@@ -245,6 +260,20 @@ def get_article(article_id):
 def save_article_content(article_id, content, content_source):
     with _connect() as connection:
         connection.execute(
-            "UPDATE articles SET content = ?, content_source = ? WHERE id = ?",
+            """UPDATE articles
+               SET content = ?, content_source = ?, ai_summary = '',
+                   ai_summary_model = '', ai_summary_updated_at = NULL
+               WHERE id = ?""",
             (content, content_source, article_id),
+        )
+
+
+def save_article_ai_summary(article_id, summary, model_key):
+    with _connect() as connection:
+        connection.execute(
+            """UPDATE articles
+               SET ai_summary = ?, ai_summary_model = ?,
+                   ai_summary_updated_at = CURRENT_TIMESTAMP
+               WHERE id = ?""",
+            (summary, model_key, article_id),
         )

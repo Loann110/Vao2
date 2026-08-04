@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from backend import db
 from backend.feeds.feeds import fetch_feed
 from backend.llm.llm import status as llm_status
+from backend.llm.llm import model_cache_key
 from backend.llm.llm import short_summary
 from backend.llm.context import article_context
 from backend.platforms.news import search_outlets
@@ -165,6 +166,28 @@ async def summarize_article(article_id: int):
     if not article:
         raise HTTPException(404, "Article not found")
 
+    cache_key = model_cache_key()
+    cached_summary = article.get("ai_summary", "")
+    if cached_summary and article.get("ai_summary_model") == cache_key:
+        return {
+            "details": {
+                "synthesis": cached_summary,
+                "key_points": [],
+                "entities": [],
+                "related": [],
+                "generated_by_ai": True,
+                "content_source": article.get("content_source", ""),
+                "cached": True,
+                "sources_used": [
+                    {
+                        "source": article["source_title"],
+                        "title": article["title"],
+                        "url": article["url"],
+                    }
+                ],
+            }
+        }
+
     content = article.get("content", "")
     content_source = article.get("content_source", "")
     if not content:
@@ -180,7 +203,15 @@ async def summarize_article(article_id: int):
         short_summary,
         article["title"],
         content,
+        content_source,
     )
+    if generated_by_ai:
+        await run_in_threadpool(
+            db.save_article_ai_summary,
+            article_id,
+            synthesis,
+            cache_key,
+        )
     return {
         "details": {
             "synthesis": synthesis,
@@ -189,6 +220,7 @@ async def summarize_article(article_id: int):
             "related": [],
             "generated_by_ai": generated_by_ai,
             "content_source": content_source,
+            "cached": False,
             "sources_used": [
                 {
                     "source": article["source_title"],
