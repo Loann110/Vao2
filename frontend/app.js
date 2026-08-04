@@ -128,6 +128,16 @@ function formatVideoTime(seconds) {
   return `${minutes}:${String(value % 60).padStart(2, "0")}`;
 }
 
+function playerControlIcon(name) {
+  const icons = {
+    play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7V5Zm6.5 0H17v14h-3.5V5Z" fill="currentColor"/></svg>',
+    volume: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    muted: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor"/><path d="m17 9 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  };
+  return icons[name] || "";
+}
+
 async function connectYouTubePlayers(version) {
   const YT = await loadYouTubeApi();
   if (version !== youtubeRenderVersion) return;
@@ -143,10 +153,17 @@ async function connectYouTubePlayers(version) {
     const player = new YT.Player(iframe, {
       events: {
         onReady() {
+          try {
+            player.setOption("captions", "track", {});
+            player.unloadModule("captions");
+          } catch {
+            // Some videos do not expose a captions module.
+          }
+
           const syncAudioControls = () => {
             const isMuted = player.isMuted() || player.getVolume() === 0;
             if (muteButton) {
-              muteButton.textContent = isMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A";
+              muteButton.innerHTML = playerControlIcon(isMuted ? "muted" : "volume");
               muteButton.setAttribute("aria-label", isMuted ? "Unmute video" : "Mute video");
               muteButton.title = isMuted ? "Unmute" : "Mute";
             }
@@ -155,7 +172,19 @@ async function connectYouTubePlayers(version) {
             }
           };
 
+          const togglePlayback = () => {
+            if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+              player.pauseVideo();
+            } else {
+              player.playVideo();
+            }
+          };
+
           syncAudioControls();
+          iframe.closest(".feed_card_video")?.addEventListener("click", (event) => {
+            if (event.target.closest(".feed_player_controls")) return;
+            togglePlayback();
+          });
           progress?.addEventListener("input", () => {
             const duration = player.getDuration();
             if (duration) player.seekTo(duration * Number(progress.value) / 100, true);
@@ -178,10 +207,8 @@ async function connectYouTubePlayers(version) {
                 player.mute();
               }
               syncAudioControls();
-            } else if (player.getPlayerState() === YT.PlayerState.PLAYING) {
-              player.pauseVideo();
             } else {
-              player.playVideo();
+              togglePlayback();
             }
           });
 
@@ -199,9 +226,15 @@ async function connectYouTubePlayers(version) {
         },
         onStateChange(event) {
           const isPlaying = event.data === YT.PlayerState.PLAYING;
-          if (isPlaying) cover?.remove();
+          if (isPlaying && cover?.isConnected) {
+            window.setTimeout(() => {
+              if (player.getPlayerState() !== YT.PlayerState.PLAYING || !cover.isConnected) return;
+              cover.classList.add("is_hiding");
+              window.setTimeout(() => cover.remove(), 280);
+            }, 600);
+          }
           if (playButton) {
-            playButton.textContent = isPlaying ? "\u275A\u275A" : "\u25B6";
+            playButton.innerHTML = playerControlIcon(isPlaying ? "pause" : "play");
             playButton.setAttribute("aria-label", isPlaying ? "Pause video" : "Play video");
             playButton.title = isPlaying ? "Pause" : "Play";
           }
@@ -360,6 +393,7 @@ function renderForYouContent() {
       const playerUrl = new URL(article.media_url);
       playerUrl.searchParams.set("enablejsapi", "1");
       playerUrl.searchParams.set("controls", "0");
+      playerUrl.searchParams.set("cc_load_policy", "0");
       playerUrl.searchParams.set("disablekb", "1");
       playerUrl.searchParams.set("fs", "0");
       playerUrl.searchParams.set("iv_load_policy", "3");
@@ -405,14 +439,14 @@ function renderForYouContent() {
       const play = document.createElement("button");
       play.type = "button";
       play.dataset.action = "toggle";
-      play.textContent = "\u25B6";
+      play.innerHTML = playerControlIcon("play");
       play.setAttribute("aria-label", "Play video");
       play.title = "Play";
 
       const mute = document.createElement("button");
       mute.type = "button";
       mute.dataset.action = "mute";
-      mute.textContent = "\uD83D\uDD0A";
+      mute.innerHTML = playerControlIcon("volume");
       mute.setAttribute("aria-label", "Mute video");
       mute.title = "Mute";
 

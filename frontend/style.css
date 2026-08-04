@@ -12,6 +12,8 @@
   --shadow: 0 8px 28px #23233712;
   --brand: linear-gradient(135deg, #6254d9, #8b5cf6, #e435d5);
   --ia-panel-width: 400px;
+  --scrollbar-thumb: #b5b5bd;
+  --scrollbar-thumb-hover: #92929c;
 }
 
 /* Dark Theme */
@@ -26,6 +28,8 @@
   --accent: #8b5cf6;
   --danger: #ff99a8;
   --shadow: 0 12px 32px #0003;
+  --scrollbar-thumb: #52525b;
+  --scrollbar-thumb-hover: #71717c;
 }
 
 * {
@@ -47,6 +51,42 @@ button, input, select {
 }
 button {
   cursor: pointer;
+}
+
+.app > aside,
+.app > aside nav,
+#ia_box {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.app > aside::-webkit-scrollbar,
+.app > aside nav::-webkit-scrollbar,
+#ia_box::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.app > aside::-webkit-scrollbar-track,
+.app > aside nav::-webkit-scrollbar-track,
+#ia_box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app > aside::-webkit-scrollbar-thumb,
+.app > aside nav::-webkit-scrollbar-thumb,
+#ia_box::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+.app > aside::-webkit-scrollbar-thumb:hover,
+.app > aside nav::-webkit-scrollbar-thumb:hover,
+#ia_box::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
 }
 
 button:focus-visible,
@@ -124,6 +164,7 @@ a:focus-visible {
 
 nav {
   min-height: 0;
+  padding-right: 6px;
   display: grid;
   align-content: start;
   gap: 3px;
@@ -290,7 +331,7 @@ main {
 header {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 10;
   margin: -16px 0 18px;
   padding: 16px 0;
   display: flex;
@@ -303,6 +344,7 @@ header {
 }
 
 .feed_list {
+  container-type: inline-size;
   display: grid;
   gap: 12px;
 }
@@ -368,17 +410,19 @@ header {
 
 .feed_card.is_youtube {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 18px;
+  gap: 14px;
 }
 
 .feed_card_video {
   min-width: 0;
   position: relative;
+  order: -1;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 0;
   background: #000;
+  cursor: pointer;
 }
 
 .feed_player_cover {
@@ -390,11 +434,18 @@ header {
   object-fit: cover;
   background: #000;
   pointer-events: none;
+  transition: opacity .28s ease;
+}
+
+.feed_player_cover.is_hiding {
+  opacity: 0;
 }
 
 .feed_card_player {
   display: block;
   width: 100%;
+  max-width: 100%;
+  height: auto;
   aspect-ratio: 16 / 9;
   border: 0;
   border-radius: 0;
@@ -408,6 +459,7 @@ header {
   flex-direction: column;
   gap: 4px;
   background: #000;
+  cursor: default;
 }
 
 .feed_player_progress {
@@ -431,6 +483,8 @@ header {
   min-width: 36px;
   height: 30px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border: 1px solid #444;
   border-radius: 6px;
   color: #fff;
@@ -444,8 +498,17 @@ header {
   background: #303030;
 }
 
+.feed_player_actions button svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  pointer-events: none;
+}
+
 .feed_player_volume {
-  width: 90px;
+  width: min(90px, 24vw);
+  min-width: 44px;
+  flex: 0 1 90px;
   accent-color: #ff0033;
 }
 
@@ -456,9 +519,14 @@ header {
   white-space: nowrap;
 }
 
-@media (max-width: 520px) {
-  .feed_card.is_youtube {
-    grid-template-columns: minmax(0, 1fr);
+@container (max-width: 360px) {
+  .feed_player_time {
+    display: none;
+  }
+
+  .feed_player_volume {
+    flex: 1 1 auto;
+    width: auto;
   }
 }
 
@@ -525,7 +593,7 @@ header {
 
 #title {
   margin: 0 0 5px;
-  font-size: clamp(29px, 4vw, 40px);
+  font-size: clamp(24px, 3vw, 34px);
   line-height: 1.1;
   letter-spacing: -0.035em;
 }
@@ -640,7 +708,6 @@ header {
   transform: translateY(-2px);
 }
 
-/* The card whose synthesis is currently shown in the panel. */
 .card:has(.is_active) {
   border-color: var(--accent);
 }
