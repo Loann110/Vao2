@@ -12,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = Path(
     os.environ.get(
         "VAO2_MODEL_PATH",
-        ROOT / "models" / "qwen2.5-3b-instruct-q4_k_m.gguf",
+        ROOT / "models" / "qwen2.5-0.5b-instruct-q4_k_m.gguf",
     )
 ).expanduser()
-MODEL_CONTEXT = int(os.environ.get("VAO2_MODEL_CONTEXT", "4096"))
+MODEL_CONTEXT = int(os.environ.get("VAO2_MODEL_CONTEXT", "2048"))
 MODEL_THREADS = int(
     os.environ.get("VAO2_MODEL_THREADS", str(max(1, (os.cpu_count() or 4) - 1)))
 )
@@ -53,7 +53,7 @@ def _load_model():
             _model = Llama(
                 model_path=str(MODEL_PATH),
                 n_ctx=MODEL_CONTEXT,
-                n_batch=min(512, MODEL_CONTEXT),
+                n_batch=min(256, MODEL_CONTEXT),
                 n_threads=MODEL_THREADS,
                 n_gpu_layers=MODEL_GPU_LAYERS,
                 verbose=False,
@@ -116,7 +116,7 @@ def short_summary(title, text):
             "Summarize this news item in two to four factual sentences and "
             "fewer than 80 words. Do not include any information that is "
             "absent from the provided text.\n\n"
-            f"Title: {title}\n\nText: {text[:10000]}"
+            f"Title: {title}\n\nText: {text[:6000]}"
         )
         if summary:
             return summary, True
