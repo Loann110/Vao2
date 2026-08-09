@@ -31,7 +31,7 @@ Stay informed faster.
 https://github.com/user-attachments/assets/4d5ebcee-5662-4bc4-b461-e677872edec3
 
 <p align="center">
-  <a href="https://github.com/Loann110/Vao2/issues/1#issuecomment-5154011207">
+  <a href="https://github.com/Loann110/Vao2/issues/2#issue-5100978141">
   </a>
 </p>
 
