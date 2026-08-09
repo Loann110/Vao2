@@ -5,7 +5,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from backend import db
 from backend.feeds.feeds import fetch_feed
@@ -13,6 +13,8 @@ from backend.llm.llm import status as llm_status
 from backend.llm.llm import model_cache_key
 from backend.llm.llm import short_summary
 from backend.llm.llm import short_summary_stream
+from backend.llm.llm import answer_question_stream
+from backend.llm.llm import suggest_questions
 from backend.llm.context import article_context
 from backend.platforms.news import search_outlets
 from backend.platforms.github import search_repositories
@@ -25,6 +27,10 @@ router = APIRouter(prefix="/api")
 class CategoryInput(BaseModel):
     id: str | None = None
     name: str
+
+
+class QuestionInput(BaseModel):
+    question: str = Field(min_length=2, max_length=500)
 
 
 class SourceInput(BaseModel):
@@ -203,6 +209,9 @@ def _summary_details(article, synthesis, generated_by_ai, content_source, cached
         "generated_by_ai": generated_by_ai,
         "content_source": content_source,
         "cached": cached,
+        "suggested_questions": suggest_questions(
+            article["title"], synthesis, content_source
+        ),
         "sources_used": [{
             "source": article["source_title"],
             "title": article["title"],
@@ -258,6 +267,45 @@ async def stream_article_summary(article_id: int):
         yield event("complete", details=_summary_details(
             article, synthesis, generated_by_ai, content_source
         ))
+
+    return StreamingResponse(
+        events(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"},
+    )
+
+
+@router.post("/articles/{article_id}/ask/stream")
+async def stream_article_answer(article_id: int, payload: QuestionInput):
+    """Answer a question progressively using only the stored source content."""
+    article = db.get_article(article_id)
+    if not article:
+        raise HTTPException(404, "Article not found")
+    question = payload.question.strip()
+    if len(question) < 2:
+        raise HTTPException(422, "Question is too short")
+
+    async def events():
+        def event(kind, **data):
+            return json.dumps({"type": kind, **data}, ensure_ascii=False) + "\n"
+
+        content = article.get("content", "")
+        content_source = article.get("content_source", "")
+        if not content:
+            yield event("status", message="Preparing source content…")
+            content, content_source = await run_in_threadpool(article_context, article)
+            await run_in_threadpool(db.save_article_content, article_id, content, content_source)
+
+        yield event("status", message="Thinking…")
+        iterator = iter(answer_question_stream(
+            article["title"], question, content, content_source
+        ))
+        while True:
+            chunk = await run_in_threadpool(next, iterator, None)
+            if chunk is None:
+                break
+            yield event("delta", text=chunk)
+        yield event("complete")
 
     return StreamingResponse(
         events(),

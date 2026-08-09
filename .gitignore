@@ -2,6 +2,8 @@
 .env
 models/*.gguf
 models/.cache/
+scripts/start_test.bat
+backend/tests/
 
 frontend/ia_box/tsconfig.ia_box.json
 frontend/ia_box/ia_box.ts

@@ -43,6 +43,11 @@ SYSTEM_PROMPT = (
     "You are a news summarization assistant. Respond only in English, "
     "use only the provided information, and do not invent any facts."
 )
+QUESTION_SYSTEM_PROMPT = (
+    "You answer questions about one provided article or video transcript. Use only the "
+    "provided excerpts. If the answer is not present, say so clearly. Answer in the same "
+    "language as the question and do not invent facts."
+)
 
 _model = None
 _model_error = None
@@ -171,7 +176,7 @@ def status():
     }
 
 
-def generate_stream(prompt, json_mode=False):
+def generate_stream(prompt, json_mode=False, system_prompt=SYSTEM_PROMPT):
     """Yield text as llama.cpp decodes it instead of waiting for completion."""
     model = _load_model()
     if model is None:
@@ -179,7 +184,7 @@ def generate_stream(prompt, json_mode=False):
 
     parameters = {
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.2,
@@ -237,6 +242,120 @@ def short_summary_stream(title, text, content_source=""):
 
     fallback = preselect_sentences(text or title, budget=360)
     yield fallback, False
+
+
+def select_question_context(question, text, budget=None):
+    """Select overlapping excerpts that best match a question."""
+    clean_text = " ".join((text or "").split())
+    if not clean_text:
+        return ""
+    if budget is None:
+        available_chars = (MODEL_CONTEXT - MODEL_MAX_TOKENS - 180) * 3
+        budget = max(1200, min(3600, available_chars))
+    if len(clean_text) <= budget:
+        return clean_text
+
+    terms = set(_words(question))
+    window_size = min(700, budget)
+    step = max(350, window_size - 120)
+    windows = []
+    for index, start in enumerate(range(0, len(clean_text), step)):
+        end = min(len(clean_text), start + window_size)
+        if end < len(clean_text):
+            boundary = clean_text.find(". ", end, min(len(clean_text), end + 160))
+            if boundary != -1 or len(clean_text) - end <= 160:
+                end = boundary + 1 if boundary != -1 else len(clean_text)
+                start = max(0, end - window_size)
+        excerpt = clean_text[start:end]
+        if not excerpt:
+            continue
+        excerpt_terms = _words(excerpt)
+        matches = sum(1 for word in excerpt_terms if word in terms)
+        score = matches * 10 + (1 if index == 0 else 0)
+        windows.append((score, index, excerpt))
+
+    selected = []
+    used = 0
+    for _, index, excerpt in sorted(windows, key=lambda item: (-item[0], item[1])):
+        if used + len(excerpt) > budget:
+            continue
+        selected.append((index, excerpt))
+        used += len(excerpt)
+    return "\n\n".join(excerpt for _, excerpt in sorted(selected))
+
+
+def answer_question_stream(title, question, text, content_source=""):
+    """Yield an answer grounded in the most relevant source excerpts."""
+    excerpts = select_question_context(question, text)
+    if not excerpts:
+        yield "The source content is unavailable, so I cannot answer this question."
+        return
+    source_label = "video transcript" if content_source == "transcript" else "article"
+    prompt = (
+        f"Source type: {source_label}\nTitle: {title}\n\n"
+        f"Relevant source excerpts:\n{excerpts}\n\nQuestion: {question}\n\n"
+        "Give a concise, direct answer grounded only in the excerpts."
+    )
+    generated = False
+    for chunk in generate_stream(prompt, system_prompt=QUESTION_SYSTEM_PROMPT):
+        generated = True
+        yield chunk
+    if not generated:
+        yield "The local AI is unavailable, so I cannot answer this question."
+
+
+def _parse_suggested_questions(raw_text):
+    """Extract up to three clean question lines from an LLM response."""
+    questions = []
+    for line in (raw_text or "").splitlines():
+        cleaned = re.sub(r"^[\s\-*\d.\)]+", "", line).strip()
+        if cleaned and cleaned.endswith("?"):
+            questions.append(cleaned)
+    return questions[:3]
+
+
+def _template_questions(clean_title, summary, content_source):
+    """Fallback prompts used when the local AI cannot ground questions in the summary."""
+    summary_words = _words(summary)
+    source_name = "video" if content_source == "transcript" else "article"
+    questions = [
+        f'What is the main point of the {source_name} about “{clean_title}”?',
+        f'Which facts or examples support the claims about “{clean_title}”?',
+    ]
+
+    concepts = set(summary_words)
+    if concepts & {"risk", "risks", "danger", "dangers", "limitation", "limitations"}:
+        questions.append("What risks or limitations are mentioned?")
+    elif concepts & {"compare", "compared", "comparison", "versus", "difference", "differences"}:
+        questions.append("What differences or trade-offs are highlighted?")
+    elif concepts & {"future", "next", "plan", "plans", "expected", "upcoming"}:
+        questions.append("What does the source say will happen next?")
+    elif content_source == "transcript":
+        questions.append("What practical advice or recommendations does the video give?")
+    else:
+        questions.append(f'What consequences or next steps are described for “{clean_title}”?')
+    return questions
+
+
+def suggest_questions(title, summary, content_source=""):
+    """Ask the local AI for three questions grounded in this item's own summary."""
+    clean_title = " ".join((title or "this content").split()).strip(" -–—:|")
+    if len(clean_title) > 64:
+        clean_title = clean_title[:64].rsplit(" ", 1)[0] + "…"
+
+    summary = (summary or "").strip()
+    if summary:
+        source_label = "video transcript" if content_source == "transcript" else "article"
+        prompt = (
+            f"Source type: {source_label}\nTitle: {clean_title}\n\nSummary:\n{summary}\n\n"
+            "Write exactly three short, specific questions a reader could ask about this "
+            "summary. One per line, no numbering, no explanations, each ending with '?'."
+        )
+        questions = _parse_suggested_questions(generate(prompt))
+        if len(questions) == 3:
+            return questions
+
+    return _template_questions(clean_title, summary, content_source)
 
 
 def short_summary(title, text, content_source=""):

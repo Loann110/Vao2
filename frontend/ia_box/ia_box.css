@@ -9,6 +9,11 @@
   border-left: 1px solid var(--line);
 }
 
+#ia_box_backdrop,
+.ia_close {
+  display: none;
+}
+
 .ia_page {
   width: 100%;
 }
@@ -65,6 +70,53 @@
   font-size: 18px;
   line-height: 1.3;
   letter-spacing: 0;
+}
+
+.ia_article_header {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.ia_article_header.has_image {
+  grid-template-columns: 58px minmax(0, 1fr);
+}
+
+.ia_article_header .ia_hero {
+  width: 58px;
+  height: 58px;
+  margin: 0;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.ia_header_text {
+  min-width: 0;
+}
+
+.ia_article_header .ia_title {
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.ia_header_source {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ia_article_header + .ia_tabs {
+  margin-top: 9px;
 }
 
 .ia_sections {
@@ -139,6 +191,135 @@
   text-decoration: underline;
 }
 
+.ia_ask {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ia_conversation:empty {
+  display: flex;
+  min-height: 140px;
+  align-items: center;
+  justify-content: center;
+}
+
+.ia_conversation:empty::before {
+  content: "Ask a question below to start chatting about this content.";
+  max-width: 220px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.ia_conversation {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.ia_message {
+  max-width: 92%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  animation: ia_message_in .18s ease;
+}
+
+.ia_message_user {
+  margin-left: auto;
+  color: #fff;
+  background: var(--accent);
+  border-bottom-right-radius: 4px;
+}
+
+.ia_message_ai {
+  margin-right: auto;
+  background: var(--soft);
+  border-bottom-left-radius: 4px;
+}
+
+.ia_message_ai.is_error {
+  color: #dc2626;
+}
+
+.ia_message_ai.is_streaming::after {
+  content: "";
+  width: .5em;
+  height: 1em;
+  margin-left: 4px;
+  display: inline-block;
+  vertical-align: -.15em;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: ia_pulse .7s ease-in-out infinite alternate;
+}
+
+.ia_ask_form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.ia_ask_input {
+  min-width: 0;
+  min-height: 42px;
+  max-height: 130px;
+  padding: 10px 11px;
+  resize: vertical;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  line-height: 1.35;
+}
+
+.ia_ask_input:focus {
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.ia_ask_input:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.ia_ask_button {
+  min-height: 42px;
+  padding: 0 15px;
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  transition: filter .15s ease, transform .1s ease;
+}
+
+.ia_ask_button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.ia_ask_button:active:not(:disabled) {
+  transform: scale(.97);
+}
+
+.ia_ask_button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.ia_ask_hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@keyframes ia_pulse {
+  from { opacity: .25; }
+  to { opacity: 1; }
+}
+
 .ia_loading,
 .ia_error {
   padding: 44px 20px;
@@ -169,16 +350,66 @@
   }
 
   #ia_box {
-    position: static;
-    grid-column: 2;
-    height: auto;
-    padding: 0 40px 70px;
-    border-left: 0;
+    width: min(440px, 92vw);
+    position: fixed;
+    z-index: 50;
+    inset: 0 0 0 auto;
+    height: 100dvh;
+    padding: 54px 24px 32px;
+    border-left: 1px solid var(--line);
+    box-shadow: -18px 0 48px rgba(0, 0, 0, .25);
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform .22s ease, visibility 0s linear .22s;
+  }
+
+  body.ia_box_open {
+    overflow: hidden;
+  }
+
+  body.ia_box_open #ia_box {
+    transform: translateX(0);
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  #ia_box_backdrop {
+    position: fixed;
+    z-index: 49;
+    inset: 0;
+    border: 0;
+    background: rgba(0, 0, 0, .48);
+    opacity: 0;
+    visibility: hidden;
+    cursor: default;
+    transition: opacity .22s ease, visibility 0s linear .22s;
+  }
+
+  body.ia_box_open #ia_box_backdrop {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .ia_close {
+    width: 36px;
+    height: 36px;
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--text);
+    background: var(--panel);
+    font-size: 24px;
+    line-height: 1;
   }
 
   .ia_page {
-    padding-top: 24px;
-    border-top: 1px solid var(--line);
+    padding-top: 0;
   }
 
   .feed {
@@ -224,7 +455,7 @@
   }
 
   main { padding: 28px 18px 70px; }
-  #ia_box { padding: 0 18px 70px; }
+  #ia_box { padding: 54px 18px 28px; }
 }
 
 @media (max-width: 520px) {
@@ -251,7 +482,7 @@
   .card_body { padding: 16px; }
   .add_source_content { padding: 20px; }
 
-  #ia_box { padding-inline: 12px; }
+  #ia_box { width: 100%; padding-inline: 12px; }
   .ia_section { padding: 16px; }
 }
 
@@ -268,4 +499,214 @@
   .ia_loader {
     animation: none;
   }
+
+  .ia_message_ai.is_streaming::after {
+    animation: none;
+  }
+
+  #ia_box,
+  #ia_box_backdrop {
+    transition: none;
+  }
+
+  .ia_tab_panel.is_active,
+  .ia_message {
+    animation: none;
+  }
+}
+
+/* Two focused workspaces: reading the summary and talking to the local AI. */
+.ia_tabs {
+  margin: 14px 0 12px;
+  padding: 3px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--soft);
+}
+
+.ia_tab {
+  min-height: 34px;
+  padding: 6px 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background .15s ease, color .15s ease;
+}
+
+.ia_tab:hover {
+  color: var(--text);
+}
+
+.ia_tab.is_active {
+  color: var(--text);
+  background: var(--panel);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+}
+
+.ia_tab_panel { display: none; }
+.ia_tab_panel.is_active { display: block; animation: ia_fade_in .18s ease; }
+
+@keyframes ia_fade_in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ia_message_in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ia_accordion {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.ia_accordion summary {
+  padding: 14px 42px 14px 18px;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background .15s ease;
+}
+
+.ia_accordion summary:hover {
+  background: var(--hover);
+}
+
+.ia_accordion summary::-webkit-details-marker { display: none; }
+.ia_accordion summary::after {
+  content: "+";
+  position: absolute;
+  right: 18px;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 400;
+}
+.ia_accordion[open] summary::after { content: "−"; }
+.ia_accordion_body { padding: 10px 18px 14px; border-top: 1px solid var(--line); }
+
+.ia_chat_panel .ia_ask {
+  min-height: min(480px, 55vh);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.ia_chat_panel .ia_conversation {
+  flex: 1 1 auto;
+  min-height: 210px;
+  max-height: min(390px, 48vh);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.ia_message_row { display: flex; align-items: flex-end; gap: 7px; }
+.ia_message_row.is_user { flex-direction: row-reverse; }
+.ia_message_row .ia_message_user,
+.ia_message_row .ia_message_ai { margin: 0; }
+
+.ia_message_avatar {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  background: var(--bg);
+  font-size: 9px;
+  font-weight: 700;
+}
+.ia_message_row.is_ai .ia_message_avatar {
+  color: #fff;
+  border: 0;
+  background: linear-gradient(135deg, var(--accent), #6366f1);
+}
+
+.ia_ask_composer {
+  padding: 12px;
+  flex: none;
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.ia_ask_help,
+.ia_ask_validation {
+  min-height: 16px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.ia_ask_validation:not(:empty) {
+  color: var(--danger);
+}
+.ia_ask_suggestions { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+.ia_suggestion {
+  padding: 5px 9px;
+  flex: none;
+  color: var(--accent);
+  background: var(--soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-radius: 99px;
+  font-size: 11px;
+  transition: background .15s ease, transform .1s ease;
+}
+.ia_suggestion:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 18%, var(--soft));
+}
+.ia_suggestion:active:not(:disabled) {
+  transform: scale(.96);
+}
+.ia_suggestion:disabled { opacity: .5; }
+.ia_ask_button.is_stop { color: #fff; background: #dc2626; border-color: #dc2626; }
+.ia_chat_panel .ia_ask_hint { padding: 14px 14px 0; }
+
+.ia_skeleton { display: grid; gap: 12px; }
+.ia_skeleton_hero,
+.ia_skeleton_line,
+.ia_skeleton_tabs,
+.ia_skeleton_card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--soft);
+}
+.ia_skeleton_hero { height: 190px; border-radius: 14px; }
+.ia_skeleton_line { width: 72%; height: 12px; }
+.ia_skeleton_line.is_short { width: 38%; }
+.ia_skeleton_line.is_title { height: 22px; }
+.ia_skeleton_tabs { height: 42px; }
+.ia_skeleton_card { height: 150px; border: 1px solid var(--line); }
+.ia_skeleton_hero::after,
+.ia_skeleton_line::after,
+.ia_skeleton_tabs::after,
+.ia_skeleton_card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text) 8%, transparent), transparent);
+  animation: ia_shimmer 1.35s infinite;
+}
+@keyframes ia_shimmer { to { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ia_skeleton_hero::after,
+  .ia_skeleton_line::after,
+  .ia_skeleton_tabs::after,
+  .ia_skeleton_card::after { animation: none; }
 }
