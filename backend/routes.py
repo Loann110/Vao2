@@ -19,6 +19,7 @@ from backend.llm.context import article_context
 from backend.platforms.news import search_outlets
 from backend.platforms.github import search_repositories
 from backend.platforms.youtube import search_channels
+from backend.platforms.weather import search_locations, weather_forecast
 
 
 router = APIRouter(prefix="/api")
@@ -51,6 +52,26 @@ class CategoryUpdate(BaseModel):
 @router.get("/llm/status")
 async def get_llm_status():
     return await run_in_threadpool(llm_status)
+
+
+@router.get("/weather/locations")
+async def weather_locations(q: str = Query(min_length=2, max_length=100)):
+    try:
+        return {"results": await search_locations(q)}
+    except httpx.HTTPError as error:
+        raise HTTPException(502, "Weather location search is temporarily unavailable") from error
+
+
+@router.get("/weather/forecast")
+async def get_weather_forecast(
+    latitude: float = Query(ge=-90, le=90),
+    longitude: float = Query(ge=-180, le=180),
+    name: str = Query(default="", max_length=120),
+):
+    try:
+        return await weather_forecast(latitude, longitude, name.strip())
+    except httpx.HTTPError as error:
+        raise HTTPException(502, "Weather data is temporarily unavailable") from error
 
 
 @router.get("/search")

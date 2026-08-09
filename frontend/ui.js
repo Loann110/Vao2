@@ -1,6 +1,7 @@
 const NAV_ITEMS = [
   { id: "all", label: "For you", icon: "home", subtitle: "All your sources in one place" },
   { id: "add-source", label: "Add source", icon: "add", subtitle: "Find and organize your sources" },
+  { id: "weather", label: "Weather", icon: "weather", subtitle: "Current conditions and the week ahead" },
   { type: "title", label: "Sources" },
   { id: "youtube", label: "YouTube", icon: "youtube", subtitle: "Latest videos from your channels" },
   { id: "github", label: "GitHub", icon: "github", subtitle: "Repositories and releases you follow" },
@@ -47,6 +48,11 @@ function platformLogo(kind, extraClass = "") {
           "stroke-width": 1.8,
           "stroke-linecap": "round",
         }),
+      );
+    } else if (kind === "weather") {
+      svg.append(
+        svgNode("circle", { cx: 9, cy: 9, r: 4, fill: "#fbbf24" }),
+        svgNode("path", { d: "M4 18h13a4 4 0 0 0 .3-8 5.8 5.8 0 0 0-10.8 1.7A3.2 3.2 0 0 0 4 18Z", fill: "currentColor" }),
       );
     } else if (kind === "youtube") {
       svg.append(
@@ -97,13 +103,14 @@ function selectNavItem(button, item) {
   const feedTools = document.getElementById("feed_tools");
   const notice = document.getElementById("notice");
   const isAddSourceView = item.id === "add-source";
+  const isWeatherView = item.id === "weather";
 
   if (title) title.textContent = item.label;
   if (subtitle) subtitle.textContent = item.subtitle || "";
   if (content) content.hidden = isAddSourceView;
   if (addSourceView) addSourceView.hidden = !isAddSourceView;
-  if (feedTools) feedTools.hidden = isAddSourceView;
-  if (notice) notice.hidden = isAddSourceView;
+  if (feedTools) feedTools.hidden = isAddSourceView || isWeatherView;
+  if (notice) notice.hidden = isAddSourceView || isWeatherView;
 
   document.body.dataset.view = item.id;
 

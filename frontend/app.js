@@ -257,6 +257,7 @@ function renderForYouContent() {
   const notice = document.getElementById("notice");
 
   if (!content) return;
+  if (["weather", "add-source"].includes(document.body.dataset.view)) return;
 
   youtubeRenderVersion += 1;
   youtubePlayers.forEach((player) => player.destroy?.());
@@ -540,7 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   window.addEventListener("navigationchange", () => {
-    if (document.body.dataset.view !== "add-source") {
+    if (!["add-source", "weather"].includes(document.body.dataset.view)) {
       renderForYouContent();
     }
   });

@@ -244,6 +244,7 @@ nav {
 .platform-logo.github { color: var(--text); }
 .platform-logo.rss { color: #f26522; }
 .platform-logo.podcast { color: #8b5cf6; }
+.platform-logo.weather { color: #38bdf8; }
 .platform-logo.add { color: var(--accent); }
 
 .nav_btn.add_source_btn {
