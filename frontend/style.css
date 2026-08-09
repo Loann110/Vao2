@@ -758,6 +758,24 @@ header {
   color: var(--accent);
 }
 
+.ia_stream_status {
+  margin-bottom: 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ia_summary_text.is_streaming::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -0.15em;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: llm_status_pulse 0.7s ease-in-out infinite alternate;
+}
+
 .card_actions {
   margin-top: 17px;
   display: flex;

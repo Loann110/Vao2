@@ -82,14 +82,22 @@ macOS / Linux:
 
 The default model is stored at
 `models/qwen2.5-1.5b-instruct-q4_k_m.gguf`. This 1.5B Q4 model provides a
-better balance between summary quality and CPU performance. Runtime
-settings can be overridden with:
+better balance between summary quality and CPU performance. Vao2 automatically selects a
+compact, balanced, or performance profile from the host's CPU, memory, architecture, and
+llama.cpp GPU-offload support. The detected settings are visible at `/api/llm/status`.
+
+Automatic settings can be overridden with:
 
 - `VAO2_MODEL_PATH`: path to another GGUF model;
-- `VAO2_MODEL_CONTEXT`: context size, default `1536` to balance quality and latency;
+- `VAO2_MODEL_CONTEXT`: context size;
+- `VAO2_MODEL_BATCH`: prompt-processing batch size;
 - `VAO2_MODEL_THREADS`: CPU thread count;
-- `VAO2_MODEL_GPU_LAYERS`: GPU-offloaded layers, default `0` for CPU;
-- `VAO2_MODEL_MAX_TOKENS`: generation limit, default `120`.
+- `VAO2_MODEL_GPU_LAYERS`: GPU-offloaded layers (`-1` means all layers);
+- `VAO2_MODEL_MAX_TOKENS`: generation limit.
+
+The hardware being profiled is the device running the Vao2 backend. A phone accessing a
+Vao2 server through its browser uses the server's profile, while a future native mobile
+build running the backend locally will select the compact profile when appropriate.
 
 ## Contributing
 

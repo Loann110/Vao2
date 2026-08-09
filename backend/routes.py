@@ -1,8 +1,10 @@
 import asyncio
+import json
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from backend import db
@@ -10,6 +12,7 @@ from backend.feeds.feeds import fetch_feed
 from backend.llm.llm import status as llm_status
 from backend.llm.llm import model_cache_key
 from backend.llm.llm import short_summary
+from backend.llm.llm import short_summary_stream
 from backend.llm.context import article_context
 from backend.platforms.news import search_outlets
 from backend.platforms.github import search_repositories
@@ -169,64 +172,95 @@ async def summarize_article(article_id: int):
     cache_key = model_cache_key()
     cached_summary = article.get("ai_summary", "")
     if cached_summary and article.get("ai_summary_model") == cache_key:
-        return {
-            "details": {
-                "synthesis": cached_summary,
-                "key_points": [],
-                "entities": [],
-                "related": [],
-                "generated_by_ai": True,
-                "content_source": article.get("content_source", ""),
-                "cached": True,
-                "sources_used": [
-                    {
-                        "source": article["source_title"],
-                        "title": article["title"],
-                        "url": article["url"],
-                    }
-                ],
-            }
-        }
+        return {"details": _summary_details(
+            article, cached_summary, True, article.get("content_source", ""), True
+        )}
 
     content = article.get("content", "")
     content_source = article.get("content_source", "")
     if not content:
         content, content_source = await run_in_threadpool(article_context, article)
-        await run_in_threadpool(
-            db.save_article_content,
-            article_id,
-            content,
-            content_source,
-        )
+        await run_in_threadpool(db.save_article_content, article_id, content, content_source)
 
     synthesis, generated_by_ai = await run_in_threadpool(
-        short_summary,
-        article["title"],
-        content,
-        content_source,
+        short_summary, article["title"], content, content_source
     )
     if generated_by_ai:
         await run_in_threadpool(
-            db.save_article_ai_summary,
-            article_id,
-            synthesis,
-            cache_key,
+            db.save_article_ai_summary, article_id, synthesis, cache_key
         )
+    return {"details": _summary_details(
+        article, synthesis, generated_by_ai, content_source
+    )}
+
+
+def _summary_details(article, synthesis, generated_by_ai, content_source, cached=False):
     return {
-        "details": {
-            "synthesis": synthesis,
-            "key_points": [],
-            "entities": [],
-            "related": [],
-            "generated_by_ai": generated_by_ai,
-            "content_source": content_source,
-            "cached": False,
-            "sources_used": [
-                {
-                    "source": article["source_title"],
-                    "title": article["title"],
-                    "url": article["url"],
-                }
-            ],
-        }
+        "synthesis": synthesis,
+        "key_points": [],
+        "entities": [],
+        "related": [],
+        "generated_by_ai": generated_by_ai,
+        "content_source": content_source,
+        "cached": cached,
+        "sources_used": [{
+            "source": article["source_title"],
+            "title": article["title"],
+            "url": article["url"],
+        }],
     }
+
+
+@router.post("/articles/{article_id}/summary/stream")
+async def stream_article_summary(article_id: int):
+    """Stream newline-delimited JSON events while the local model decodes."""
+    article = db.get_article(article_id)
+    if not article:
+        raise HTTPException(404, "Article not found")
+
+    async def events():
+        def event(kind, **payload):
+            return json.dumps({"type": kind, **payload}, ensure_ascii=False) + "\n"
+
+        cache_key = model_cache_key()
+        cached = article.get("ai_summary", "")
+        if cached and article.get("ai_summary_model") == cache_key:
+            yield event("complete", details=_summary_details(
+                article, cached, True, article.get("content_source", ""), True
+            ))
+            return
+
+        yield event("status", message="Preparing article…")
+        content = article.get("content", "")
+        content_source = article.get("content_source", "")
+        if not content:
+            content, content_source = await run_in_threadpool(article_context, article)
+            await run_in_threadpool(db.save_article_content, article_id, content, content_source)
+
+        yield event("status", message="Loading local AI…")
+        chunks = []
+        generated_by_ai = False
+        iterator = iter(short_summary_stream(article["title"], content, content_source))
+        while True:
+            item = await run_in_threadpool(next, iterator, None)
+            if item is None:
+                break
+            chunk, is_ai = item
+            chunks.append(chunk)
+            generated_by_ai = generated_by_ai or is_ai
+            yield event("delta", text=chunk, generated_by_ai=is_ai)
+
+        synthesis = "".join(chunks).strip()
+        if generated_by_ai:
+            await run_in_threadpool(
+                db.save_article_ai_summary, article_id, synthesis, cache_key
+            )
+        yield event("complete", details=_summary_details(
+            article, synthesis, generated_by_ai, content_source
+        ))
+
+    return StreamingResponse(
+        events(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"},
+    )

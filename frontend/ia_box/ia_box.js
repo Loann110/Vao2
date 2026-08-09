@@ -68,6 +68,35 @@
         }
         return response.json();
     }
+    async function requestStream(url, method, onEvent) {
+        const response = await fetch(url, {
+            method,
+            credentials: "same-origin",
+            headers: { Accept: "application/x-ndjson" },
+            signal: requestController?.signal,
+        });
+        if (!response.ok)
+            throw new Error(`Backend error ${response.status}`);
+        if (!response.body)
+            throw new Error("Streaming is not supported by this browser");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+            const { value, done } = await reader.read();
+            buffer += value ? decoder.decode(value, { stream: !done }) : "";
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+                if (line.trim())
+                    onEvent(JSON.parse(line));
+            }
+            if (done)
+                break;
+        }
+        if (buffer.trim())
+            onEvent(JSON.parse(buffer));
+    }
     function section(title, content) {
         const wrapper = createNode("section", "ia_section");
         wrapper.append(createNode("h3", "", title), content);
@@ -166,9 +195,10 @@
         }
         page.append(meta, createNode("h2", "ia_title", article.title || "News summary"));
         const sections = createNode("div", "ia_sections");
+        const summaryText = createNode("p", "ia_summary_text", details.synthesis || "No content is available for the summary.");
         sections.append(section(details.generated_by_ai
             ? "Summary (AI-generated)"
-            : "Summary (source excerpts — local AI unavailable)", createNode("p", "", details.synthesis || "No content is available for the summary.")));
+            : "Summary (source excerpts — local AI unavailable)", summaryText));
         const keyPoints = stringItems(details.key_points);
         const entities = stringItems(details.entities);
         const related = stringItems(details.related);
@@ -198,6 +228,20 @@
         iaBox.replaceChildren(page);
         iaBox.scrollTop = 0;
     }
+    function beginProgress(article) {
+        render(article, {
+            synthesis: " ", generated_by_ai: true,
+            key_points: [], entities: [], related: [], sources_used: [],
+        });
+        const text = iaBox.querySelector(".ia_summary_text");
+        if (!(text instanceof HTMLElement))
+            throw new Error("Unable to display the progressive summary");
+        text.textContent = "";
+        text.classList.add("is_streaming");
+        const status = createNode("div", "ia_stream_status", "Preparing article…");
+        text.before(status);
+        return { text, status };
+    }
     async function open(options = {}) {
         const articleUrl = validBackendUrl(options.articleUrl);
         const detailsUrl = validBackendUrl(options.detailsUrl);
@@ -210,13 +254,22 @@
         requestController = new AbortController();
         showLoading();
         try {
-            const [articleResponse, detailsResponse] = await Promise.all([
-                requestJson(articleUrl),
-                requestJson(detailsUrl, detailsMethod),
-            ]);
+            const articleResponse = await requestJson(articleUrl);
             const article = unwrapObject(articleResponse, "article");
-            const details = unwrapObject(detailsResponse, "details");
-            render(article, details);
+            const progress = beginProgress(article);
+            const streamUrl = `${detailsUrl.replace(/\/$/, "")}/stream`;
+            await requestStream(streamUrl, detailsMethod, (event) => {
+                if (!isRecord(event))
+                    return;
+                if (event.type === "status")
+                    progress.status.textContent = String(event.message || "Working…");
+                else if (event.type === "delta") {
+                    progress.status.textContent = "Writing summary…";
+                    progress.text.textContent += String(event.text || "");
+                }
+                else if (event.type === "complete")
+                    render(article, unwrapObject(event, "details"));
+            });
             return true;
         }
         catch (error) {

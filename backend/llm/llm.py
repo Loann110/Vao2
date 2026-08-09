@@ -4,6 +4,8 @@ from collections import Counter
 from pathlib import Path
 from threading import Lock
 
+from backend.llm.runtime import select_runtime_config
+
 try:
     from llama_cpp import Llama
 except ImportError:  # Keep the feed usable until the optional local-AI runtime is installed.
@@ -17,12 +19,17 @@ MODEL_PATH = Path(
         ROOT / "models" / "qwen2.5-1.5b-instruct-q4_k_m.gguf",
     )
 ).expanduser()
-MODEL_CONTEXT = int(os.environ.get("VAO2_MODEL_CONTEXT", "1536"))
-MODEL_THREADS = int(
-    os.environ.get("VAO2_MODEL_THREADS", str(min(4, os.cpu_count() or 4)))
+GPU_OFFLOAD_AVAILABLE = bool(
+    Llama is not None
+    and hasattr(__import__("llama_cpp"), "llama_supports_gpu_offload")
+    and __import__("llama_cpp").llama_supports_gpu_offload()
 )
-MODEL_GPU_LAYERS = int(os.environ.get("VAO2_MODEL_GPU_LAYERS", "0"))
-MODEL_MAX_TOKENS = int(os.environ.get("VAO2_MODEL_MAX_TOKENS", "100"))
+RUNTIME = select_runtime_config(gpu_offload=GPU_OFFLOAD_AVAILABLE)
+MODEL_CONTEXT = RUNTIME.context
+MODEL_BATCH = RUNTIME.batch
+MODEL_THREADS = RUNTIME.threads
+MODEL_GPU_LAYERS = RUNTIME.gpu_layers
+MODEL_MAX_TOKENS = RUNTIME.max_tokens
 SUMMARY_PIPELINE_VERSION = "qwen-1.5b-v4"
 
 STOP_WORDS = {
@@ -134,7 +141,7 @@ def _load_model():
             _model = Llama(
                 model_path=str(MODEL_PATH),
                 n_ctx=MODEL_CONTEXT,
-                n_batch=min(256, MODEL_CONTEXT),
+                n_batch=min(MODEL_BATCH, MODEL_CONTEXT),
                 n_threads=MODEL_THREADS,
                 n_threads_batch=MODEL_THREADS,
                 n_gpu_layers=MODEL_GPU_LAYERS,
@@ -159,15 +166,16 @@ def status():
         "runtime_installed": runtime_installed,
         "model_installed": model_installed,
         "loaded": _model is not None,
+        "runtime": RUNTIME.public_dict(),
         "error": _model_error,
     }
 
 
-def generate(prompt, json_mode=False):
-    """Generate text in-process with llama.cpp, or return None when unavailable."""
+def generate_stream(prompt, json_mode=False):
+    """Yield text as llama.cpp decodes it instead of waiting for completion."""
     model = _load_model()
     if model is None:
-        return None
+        return
 
     parameters = {
         "messages": [
@@ -178,6 +186,7 @@ def generate(prompt, json_mode=False):
         "max_tokens": MODEL_MAX_TOKENS,
         "repeat_penalty": 1.15,
         "stop": ["<|im_end|>", "<|endoftext|>"],
+        "stream": True,
     }
     if json_mode:
         parameters["response_format"] = {"type": "json_object"}
@@ -186,14 +195,22 @@ def generate(prompt, json_mode=False):
         # A Llama context must not be decoded by multiple FastAPI worker threads at once.
         with _generation_lock:
             response = model.create_chat_completion(**parameters)
-        content = response["choices"][0]["message"]["content"]
-        return content.strip() or None
+            for chunk in response:
+                content = chunk["choices"][0].get("delta", {}).get("content", "")
+                if content:
+                    yield content
     except (KeyError, OSError, RuntimeError, TypeError, ValueError):
-        return None
+        return
 
 
-def short_summary(title, text, content_source=""):
-    """Return a short English summary and whether llama.cpp generated it."""
+def generate(prompt, json_mode=False):
+    """Generate a complete response for callers that do not consume a stream."""
+    content = "".join(generate_stream(prompt, json_mode=json_mode)).strip()
+    return content or None
+
+
+def short_summary_stream(title, text, content_source=""):
+    """Yield ``(text, generated_by_ai)`` chunks for a progressive summary."""
     text = (text or "").strip()
     if text:
         is_transcript = content_source == "transcript"
@@ -209,12 +226,23 @@ def short_summary(title, text, content_source=""):
             else "Summarize this news item in two to four factual sentences and fewer "
             "than 80 words. Do not include information absent from the text."
         )
-        summary = generate(
-            f"{instruction}\n\n"
-            f"Title: {title}\n\nText: {selected_text}"
-        )
-        if summary:
-            return summary, True
+        generated = False
+        for chunk in generate_stream(
+            f"{instruction}\n\nTitle: {title}\n\nText: {selected_text}"
+        ):
+            generated = True
+            yield chunk, True
+        if generated:
+            return
 
     fallback = preselect_sentences(text or title, budget=360)
-    return fallback, False
+    yield fallback, False
+
+
+def short_summary(title, text, content_source=""):
+    """Return a short English summary and whether llama.cpp generated it."""
+    chunks = []
+    generated_by_ai = False
+    for chunk, generated_by_ai in short_summary_stream(title, text, content_source):
+        chunks.append(chunk)
+    return "".join(chunks).strip(), generated_by_ai
