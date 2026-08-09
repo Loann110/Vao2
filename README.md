@@ -95,9 +95,6 @@ Automatic settings can be overridden with:
 - `VAO2_MODEL_GPU_LAYERS`: GPU-offloaded layers (`-1` means all layers)
 - `VAO2_MODEL_MAX_TOKENS`: generation limit
 
-The hardware being profiled is the device running the Vao2 backend. A phone accessing a
-Vao2 server through its browser uses the server's profile, while a future native mobile
-build running the backend locally will select the compact profile when appropriate.
 
 ## Contributing
 
