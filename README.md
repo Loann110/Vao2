@@ -28,12 +28,7 @@ Stay informed faster.
 
 ## Demo
 
-https://github.com/user-attachments/assets/4d5ebcee-5662-4bc4-b461-e677872edec3
-
-<p align="center">
-  <a href="https://github.com/Loann110/Vao2/issues/2#issue-5100978141">
-  </a>
-</p>
+https://github.com/user-attachments/assets/4f585f25-e762-4aeb-b051-bb0c8029700c
 
 ## Work in progress
 
