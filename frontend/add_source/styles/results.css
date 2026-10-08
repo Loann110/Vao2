@@ -1,0 +1,132 @@
+/* =============================================================================
+   "Add source": search results, and the rows shared with "My sources"
+   ============================================================================= */
+
+.as_results {
+  max-height: 380px;
+  margin-top: 12px;
+  padding-right: 4px;
+  display: grid;
+  overflow-y: auto;
+}
+
+.as_result,
+.as_source {
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.as_thumb {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  object-fit: cover;
+  background: var(--paper-inset);
+}
+
+.as_result_text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.as_result > .card_btn {
+  margin-left: auto;
+  flex: none;
+}
+
+.as_result_title {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.as_result_meta {
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.as_badge {
+  padding: 0 5px;
+  flex: none;
+  border-radius: var(--radius-xs);
+  color: var(--accent);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+
+/* Waiting, nothing found, error */
+
+.as_hint,
+.as_error,
+.as_loading {
+  padding: 20px 4px;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.as_error {
+  padding-left: 12px;
+  border-left: 3px solid var(--danger);
+  color: var(--danger);
+  text-align: left;
+}
+
+
+/* "Add a URL directly" */
+
+.as_manual {
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
+.as_manual summary {
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.as_manual .as_row {
+  margin-top: 12px;
+}
+
+
+/* Narrow screens */
+
+@media (max-width: 620px) {
+  .as_row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .as_row .btn_primary,
+  .as_row .btn_secondary {
+    width: 100%;
+  }
+
+  .as_result,
+  .as_source {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}

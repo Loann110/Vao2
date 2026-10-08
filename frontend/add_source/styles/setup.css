@@ -1,0 +1,197 @@
+/* =============================================================================
+   "Add source": page layout, the numbered steps, platform and category
+   ============================================================================= */
+
+/* No AI panel on this page: the view takes its place. */
+body[data-view="add-source"] .app {
+  grid-template-columns: 244px minmax(0, 1fr);
+}
+
+body[data-view="add-source"] #ia_box,
+body[data-view="add-source"] #ia_box_backdrop {
+  display: none;
+}
+
+.as_page {
+  max-width: 880px;
+  display: grid;
+}
+
+
+/* Steps */
+
+.as_block {
+  padding: 22px 0;
+}
+
+.as_block:first-child {
+  padding-top: 4px;
+}
+
+.as_block_head {
+  margin-bottom: 14px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.as_block h2 {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+}
+
+/* The step number, printed as "01 /". */
+.as_step {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  font-variant-numeric: tabular-nums;
+}
+
+.as_step::before {
+  content: "0";
+}
+
+.as_step::after {
+  content: " /";
+  color: var(--ink-faint);
+}
+
+.as_sub {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.as_total {
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* 1. Platform */
+
+.as_platforms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+  gap: 6px;
+}
+
+.as_platform {
+  min-height: 36px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  color: var(--ink);
+  background: var(--paper-inset);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  transition: background .15s ease;
+}
+
+.as_platform:hover {
+  background: var(--accent-soft);
+}
+
+.as_platform.is_active {
+  background: var(--accent-soft);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.as_platform_count {
+  margin-left: auto;
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* Form rows */
+
+.as_row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.as_field {
+  min-width: 190px;
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+
+.as_label {
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.as_field .input,
+.as_grow {
+  width: 100%;
+  min-width: 0;
+}
+
+.as_grow {
+  flex: 1;
+}
+
+
+/* 2. Categories */
+
+.as_chips {
+  margin-top: 12px;
+  padding-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.as_category_chip {
+  padding: 2px 4px 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: var(--radius-xs);
+  background: var(--paper-inset);
+  font-size: 11.5px;
+}
+
+.as_chip_remove {
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-xs);
+  color: var(--ink-faint);
+  background: transparent;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.as_chip_remove:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}

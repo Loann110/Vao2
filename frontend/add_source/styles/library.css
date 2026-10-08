@@ -1,0 +1,61 @@
+/* =============================================================================
+   "Add source": the "My sources" list
+   ============================================================================= */
+
+/* By category / By platform */
+.as_tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.as_tab {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  color: var(--ink-muted);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.as_tab:hover {
+  color: var(--ink);
+}
+
+.as_tab.is_active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.as_list {
+  display: grid;
+  gap: 18px;
+}
+
+.as_group {
+  display: grid;
+}
+
+.as_group_title {
+  margin-bottom: 2px;
+  padding-bottom: 5px;
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* The category menu on each source row. */
+.as_move {
+  width: auto;
+  min-width: 0;
+  height: 30px;
+  flex: none;
+  padding: 0 6px;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  font-size: 11.5px;
+}
