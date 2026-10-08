@@ -1,0 +1,99 @@
+/* =============================================================================
+   AI panel on narrow screens: a drawer over the page
+   ============================================================================= */
+
+@media (max-width: 1180px) {
+  #ia_box {
+    width: min(430px, 92vw);
+    position: fixed;
+    z-index: 50;
+    inset: 0 0 0 auto;
+    height: 100dvh;
+    padding: 52px 22px 32px;
+    box-shadow: var(--shadow-sheet);
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform .22s ease, visibility 0s linear .22s;
+  }
+
+  body.ia_box_open {
+    overflow: hidden;
+  }
+
+  body.ia_box_open #ia_box {
+    transform: translateX(0);
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  /* The dark layer behind the drawer; a click on it closes the drawer. */
+  #ia_box_backdrop {
+    position: fixed;
+    z-index: 49;
+    inset: 0;
+    border: 0;
+    background: color-mix(in srgb, #14141c 55%, transparent);
+    opacity: 0;
+    visibility: hidden;
+    cursor: default;
+    transition: opacity .22s ease, visibility 0s linear .22s;
+  }
+
+  body.ia_box_open #ia_box_backdrop {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .ia_close {
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-xs);
+    color: var(--ink);
+    background: var(--paper);
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .ia_close:hover {
+    color: var(--accent);
+  }
+
+  /* In the drawer the header scrolls away, so it never covers the close button. */
+  .ia_article_header {
+    position: static;
+    margin: 0;
+    padding: 0 0 14px;
+  }
+}
+
+@media (max-width: 620px) {
+  #ia_box {
+    width: 100%;
+    padding-inline: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ia_loader,
+  .ia_message_ai.is_streaming::after,
+  .ia_skeleton_hero::after,
+  .ia_skeleton_line::after,
+  .ia_skeleton_tabs::after,
+  .ia_skeleton_card::after {
+    animation: none;
+  }
+
+  #ia_box,
+  #ia_box_backdrop,
+  .ia_accordion summary::after {
+    transition: none;
+  }
+}

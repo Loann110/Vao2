@@ -1,0 +1,318 @@
+/* =============================================================================
+   AI panel: the column on the right, the article header, the tabs and the
+   "Summary" tab. The weather assistant (weather/) reuses these classes.
+   ============================================================================= */
+
+#ia_box {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 20px 20px 40px;
+  overflow-y: auto;
+  color: var(--ink);
+  background: var(--paper-tint);
+}
+
+/* Only used when the panel is a drawer (responsive.css). */
+#ia_box_backdrop,
+.ia_close {
+  display: none;
+}
+
+.ia_page {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+}
+
+/* "AI ASSISTANT", with a small accent dot. */
+.ia_eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.ia_eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+
+/* Empty panel: nothing selected yet */
+
+.ia_empty {
+  margin-top: 24px;
+  padding: 28px 20px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  border: 1px dashed var(--rule);
+  border-radius: 12px;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.ia_empty_icon {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+
+.ia_empty strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.ia_empty p {
+  max-width: 260px;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+
+/* Article header: thumbnail, title, source. Stays on top while scrolling. */
+
+.ia_article_header {
+  position: sticky;
+  top: -20px;
+  z-index: 10;
+  min-width: 0;
+  margin: -20px -20px 0;
+  padding: 20px 20px 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--rule-soft);
+  background: var(--paper-tint);
+}
+
+.ia_article_header.has_image {
+  grid-template-columns: 56px minmax(0, 1fr);
+}
+
+.ia_hero {
+  width: 56px;
+  height: 56px;
+  display: block;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--paper-inset);
+}
+
+.ia_header_text {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.ia_title {
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -.01em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.ia_header_source {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* Tabs: a segmented control, the active half raised */
+
+.ia_tabs {
+  padding: 3px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  border-radius: 10px;
+  background: var(--paper-inset);
+}
+
+.ia_tab {
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink-muted);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background .15s ease, color .15s ease;
+}
+
+.ia_tab:hover {
+  color: var(--ink);
+}
+
+.ia_tab.is_active {
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0 1px 3px rgb(0 0 0 / .18);
+}
+
+/* On dark paper, raised means lighter. */
+[data-theme="dark"] .ia_tab.is_active {
+  background: color-mix(in srgb, var(--text) 13%, var(--bg));
+}
+
+.ia_tab_panel {
+  display: none;
+}
+
+.ia_tab_panel.is_active {
+  display: block;
+}
+
+
+/* Summary: a card with a badge saying where the text comes from */
+
+.ia_sections {
+  display: grid;
+  gap: 12px;
+}
+
+.ia_section {
+  padding: 16px;
+  border: 1px solid var(--rule-soft);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.ia_section h3 {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ia_badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.ia_badge.is_plain {
+  color: var(--ink-muted);
+  background: var(--paper-inset);
+}
+
+.ia_section p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+
+/* "Sources used", folded */
+
+.ia_accordion {
+  border: 1px solid var(--rule-soft);
+  border-radius: 12px;
+}
+
+.ia_accordion summary {
+  padding: 12px 40px 12px 16px;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ia_accordion summary:hover {
+  color: var(--ink);
+}
+
+.ia_accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The arrow on the right, pointing down when folded. */
+.ia_accordion summary::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 5px);
+  right: 18px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform .18s ease;
+}
+
+.ia_accordion[open] summary::after {
+  transform: rotate(-135deg);
+}
+
+.ia_accordion_body {
+  padding: 0 16px 6px;
+}
+
+.ia_source {
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.ia_item_title {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ia_item_meta {
+  margin-top: 2px;
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+
+.ia_link {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--accent);
+}
+
+.ia_link:hover {
+  background: var(--accent-soft);
+}
+
+.ia_link svg {
+  width: 17px;
+  height: 17px;
+}
