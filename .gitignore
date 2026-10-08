@@ -1,12 +1,32 @@
+# Python
 .venv/
+__pycache__/
+*.py[cod]
+
+# Local settings and secrets
 .env
+.env.*
+
+# Local data: the SQLite database, created on first start
+backend/vao2.db
+backend/vao2.db-*
+
+# Local AI models (downloaded by scripts/download_model.py)
 models/*.gguf
 models/.cache/
+
+# Demo video: too heavy for the repository, uploaded to GitHub instead
+docs/demo.mp4
+
+# Local test files
 scripts/start_test.bat
 backend/tests/
 
-frontend/ia_box/tsconfig.ia_box.json
-frontend/ia_box/ia_box.ts
-
-frontend/add_source/tsconfig.add_source.json
-frontend/add_source/add_source.ts
+# Editors and operating systems
+.vscode/
+.idea/
+.claude/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
