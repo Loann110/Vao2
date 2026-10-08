@@ -11,5 +11,5 @@ if [ ! -x "$PYTHON" ]; then
 fi
 
 cd "$ROOT"
-echo "Vao2 is starting at http://127.0.0.1:8000"
+echo "Vao2 is starting at http://127.0.0.1:8080"
 exec "$PYTHON" backend/main.py

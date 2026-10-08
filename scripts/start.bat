@@ -10,7 +10,7 @@ if not exist "%PYTHON%" (
 )
 
 pushd "%ROOT%" || exit /b 1
-echo Vao2 is starting at http://127.0.0.1:8000
+echo Vao2 is starting at http://127.0.0.1:8080
 "%PYTHON%" backend\main.py
 set "EXIT_CODE=%errorlevel%"
 popd
