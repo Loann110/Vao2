@@ -1,118 +1,127 @@
 """Hardware-aware llama.cpp defaults.
 
-Environment variables remain authoritative so packaged builds and advanced users can
-override every automatically selected value.
+Called once by ``backend/llm/model.py`` when the module is imported. It returns
+a plain dict of settings; it never loads the model itself.
+
+    1. The machine is measured: processors and memory.
+    2. A profile is chosen: "compact", "balanced" or "performance".
+    3. Environment variables (``VAO2_MODEL_*``) override any default.
 """
 
-from dataclasses import asdict, dataclass
+#/////////////////////////////////////////////////////////
+# IMPORTS ////////////////////////////////////////////////
+#/////////////////////////////////////////////////////////
 import os
 import platform
-import sys
+
+import psutil
 
 
-@dataclass(frozen=True)
-class RuntimeConfig:
-    profile: str
-    logical_cpus: int
-    memory_gib: float | None
-    context: int
-    batch: int
-    threads: int
-    gpu_layers: int
-    max_tokens: int
+# Settings of each profile:
+#   context      how much text the model reads at once (in tokens)
+#   batch        how many tokens are processed per step when reading
+#   max_tokens   the longest answer the model may write
+#   max_threads  the most processor threads it may use
+PROFILES = {
+    "compact": {
+        "context": 1024,
+        "batch": 64,
+        "max_tokens": 80,
+        "max_threads": 4,
+    },
+    "balanced": {
+        "context": 1536,
+        "batch": 128,
+        "max_tokens": 100,
+        "max_threads": 6,
+    },
+    "performance": {
+        "context": 1536,
+        "batch": 256,
+        "max_tokens": 120,
+        "max_threads": 8,
+    },
+}
 
-    def public_dict(self):
-        return asdict(self)
+
+#/////////////////////////////////////////////////////////
+# HARDWARE DETECTION /////////////////////////////////////
+#/////////////////////////////////////////////////////////
+def _memory_gib():
+    total_bytes = psutil.virtual_memory().total
+    return total_bytes / 1024**3
 
 
-def _total_memory_bytes():
-    """Return physical memory using only the standard library."""
+def _is_arm_processor():
+    architecture = platform.machine().lower()
+    return architecture.startswith(("arm", "aarch"))
+
+
+#/////////////////////////////////////////////////////////
+# ENVIRONMENT OVERRIDES //////////////////////////////////
+#/////////////////////////////////////////////////////////
+def _env_int(name, default):
+    """The integer in environment variable `name`, or `default` if unset or invalid."""
     try:
-        if sys.platform == "win32":
-            import ctypes
-
-            class MemoryStatus(ctypes.Structure):
-                _fields_ = [
-                    ("length", ctypes.c_ulong),
-                    ("memory_load", ctypes.c_ulong),
-                    ("total_physical", ctypes.c_ulonglong),
-                    ("available_physical", ctypes.c_ulonglong),
-                    ("total_page_file", ctypes.c_ulonglong),
-                    ("available_page_file", ctypes.c_ulonglong),
-                    ("total_virtual", ctypes.c_ulonglong),
-                    ("available_virtual", ctypes.c_ulonglong),
-                    ("available_extended_virtual", ctypes.c_ulonglong),
-                ]
-
-            status = MemoryStatus()
-            status.length = ctypes.sizeof(status)
-            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
-                return status.total_physical
-        elif sys.platform == "darwin":
-            import subprocess
-
-            result = subprocess.run(
-                ["sysctl", "-n", "hw.memsize"],
-                capture_output=True,
-                check=True,
-                text=True,
-                timeout=2,
-            )
-            return int(result.stdout.strip())
-        elif hasattr(os, "sysconf"):
-            return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
-    except (AttributeError, OSError, ValueError):
-        pass
-    return None
+        return int(os.environ[name])
+    except (KeyError, ValueError):
+        return default
 
 
-def _env_int(name, automatic):
-    value = os.environ.get(name)
-    if value is None or not value.strip():
-        return automatic
-    try:
-        return int(value)
-    except ValueError:
-        return automatic
+#/////////////////////////////////////////////////////////
+# PROFILE SELECTION //////////////////////////////////////
+#/////////////////////////////////////////////////////////
+def _choose_profile(cpus, memory_gib):
+    if cpus <= 4 or memory_gib < 6:
+        return "compact"
+
+    if cpus <= 8 or memory_gib < 12:
+        return "balanced"
+
+    return "performance"
 
 
-def select_runtime_config(
-    logical_cpus=None,
-    memory_bytes=None,
-    machine=None,
-    gpu_offload=False,
-):
-    """Choose conservative defaults across desktop and mobile-class hardware."""
-    cpus = max(1, logical_cpus or os.cpu_count() or 1)
-    total_memory = _total_memory_bytes() if memory_bytes is None else memory_bytes
-    memory_gib = total_memory / (1024**3) if total_memory else None
-    architecture = (machine or platform.machine()).lower()
-    arm_device = "arm" in architecture or "aarch" in architecture
-
-    if cpus <= 4 or (memory_gib is not None and memory_gib < 6):
-        profile = "compact"
-        context, batch, max_tokens = 1024, 64, 80
-    elif cpus <= 8 or (memory_gib is not None and memory_gib < 12):
-        profile = "balanced"
-        context, batch, max_tokens = 1536, 128, 100
+def _thread_count(cpus, max_threads):
+    # x86 counts each core twice (hyper-threading) and using all of them slows
+    # generation down; ARM reports real cores.
+    if _is_arm_processor():
+        useful_threads = cpus - 1
     else:
-        profile = "performance"
-        context, batch, max_tokens = 1536, 256, 120
+        useful_threads = (cpus + 1) // 2
 
-    # x86 logical CPU counts usually include SMT; using every logical core can slow
-    # token generation. ARM devices more commonly expose heterogeneous real cores.
-    useful_cpus = cpus - 1 if arm_device else (cpus + 1) // 2
-    thread_cap = 4 if profile == "compact" else 6 if profile == "balanced" else 8
-    threads = max(1, min(useful_cpus, thread_cap))
-    automatic_gpu_layers = -1 if gpu_offload else 0
+    return max(1, min(useful_threads, max_threads))
 
-    return RuntimeConfig(
-        profile=profile,
-        logical_cpus=cpus,
-        memory_gib=round(memory_gib, 1) if memory_gib is not None else None,
-        context=max(512, _env_int("VAO2_MODEL_CONTEXT", context)),
-        batch=max(32, _env_int("VAO2_MODEL_BATCH", batch)),
-        threads=max(1, _env_int("VAO2_MODEL_THREADS", threads)),
-        gpu_layers=_env_int("VAO2_MODEL_GPU_LAYERS", automatic_gpu_layers),
-        max_tokens=max(32, _env_int("VAO2_MODEL_MAX_TOKENS", max_tokens)),
-    )
+
+def select_runtime_config(gpu_offload=False):
+    """Choose conservative defaults for the machine running Vao2."""
+    cpus = os.cpu_count() or 1
+    memory_gib = _memory_gib()
+
+    profile_name = _choose_profile(cpus, memory_gib)
+    profile = PROFILES[profile_name]
+
+    default_threads = _thread_count(cpus, profile["max_threads"])
+
+    # -1 puts every layer of the model on the graphics card, 0 none.
+    if gpu_offload:
+        default_gpu_layers = -1
+    else:
+        default_gpu_layers = 0
+
+    context = _env_int("VAO2_MODEL_CONTEXT", profile["context"])
+    batch = _env_int("VAO2_MODEL_BATCH", profile["batch"])
+    threads = _env_int("VAO2_MODEL_THREADS", default_threads)
+    gpu_layers = _env_int("VAO2_MODEL_GPU_LAYERS", default_gpu_layers)
+    max_tokens = _env_int("VAO2_MODEL_MAX_TOKENS", profile["max_tokens"])
+
+    # Below these values the model cannot produce a usable summary.
+    return {
+        "profile": profile_name,
+        "logical_cpus": cpus,
+        "memory_gib": round(memory_gib, 1),
+        "context": max(512, context),
+        "batch": max(32, batch),
+        "threads": max(1, threads),
+        "gpu_layers": gpu_layers,
+        "max_tokens": max(32, max_tokens),
+    }

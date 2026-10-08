@@ -1,7 +1,19 @@
+"""
+News sources offered in the "Add source" search.
+
+Called by `backend/routes/sources.py`. A search returns the known outlets whose
+name or address matches, plus a live Google News feed for the search itself,
+so any topic can become a source.
+"""
+
+#/////////////////////////////////////////////////////////
+# IMPORTS ////////////////////////////////////////////////
+#/////////////////////////////////////////////////////////
 from urllib.parse import quote_plus
 
 
-NEWS_OUTLETS: tuple[tuple[str, str, str], ...] = (
+# (name, RSS feed, website)
+NEWS_OUTLETS = (
     ("Le Monde", "https://www.lemonde.fr/rss/une.xml", "https://www.lemonde.fr"),
     ("Le Figaro", "https://www.lefigaro.fr/rss/figaro_actualites.xml", "https://www.lefigaro.fr"),
     ("Liberation", "https://www.liberation.fr/arc/outboundfeeds/rss/?outputType=xml", "https://www.liberation.fr"),
@@ -28,38 +40,45 @@ NEWS_OUTLETS: tuple[tuple[str, str, str], ...] = (
     ("arXiv cs.LG", "https://rss.arxiv.org/rss/cs.LG", "https://arxiv.org/list/cs.LG/recent"),
 )
 
+GOOGLE_NEWS_REGION = "hl=en-US&gl=US&ceid=US:en"
+
+
+#/////////////////////////////////////////////////////////
+# SEARCH /////////////////////////////////////////////////
+#/////////////////////////////////////////////////////////
+def _google_news_source(query):
+    """A source that follows a search on Google News."""
+    encoded_query = quote_plus(query)
+
+    return {
+        "platform": "news",
+        "title": f"News about {query}",
+        "description": "Live topic feed from Google News",
+        "url": f"https://news.google.com/search?q={encoded_query}&{GOOGLE_NEWS_REGION}",
+        "feed_url": f"https://news.google.com/rss/search?q={encoded_query}&{GOOGLE_NEWS_REGION}",
+        "thumbnail": "",
+    }
+
 
 def search_outlets(query):
     query = query.strip()
     needle = query.lower()
-    results = [
-        {
+
+    results = []
+
+    for name, feed_url, website_url in NEWS_OUTLETS:
+        matches = needle in name.lower() or needle in website_url.lower()
+        if not matches:
+            continue
+
+        results.append({
             "platform": "news",
             "title": name,
             "description": feed_url,
             "url": website_url,
             "feed_url": feed_url,
             "thumbnail": "",
-        }
-        for name, feed_url, website_url in NEWS_OUTLETS
-        if needle in name.lower() or needle in website_url.lower()
-    ]
+        })
 
-    encoded_query = quote_plus(query)
-    results.append(
-        {
-            "platform": "news",
-            "title": f"News about {query}",
-            "description": "Live topic feed from Google News",
-            "url": (
-                f"https://news.google.com/search?q={encoded_query}"
-                "&hl=en-US&gl=US&ceid=US:en"
-            ),
-            "feed_url": (
-                f"https://news.google.com/rss/search?q={encoded_query}"
-                "&hl=en-US&gl=US&ceid=US:en"
-            ),
-            "thumbnail": "",
-        }
-    )
+    results.append(_google_news_source(query))
     return results
