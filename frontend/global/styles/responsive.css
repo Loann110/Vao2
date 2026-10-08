@@ -1,0 +1,115 @@
+/* =============================================================================
+   Narrow screens: the main view keeps the space, the side columns give way
+   -----------------------------------------------------------------------------
+   under 1180px  the AI panel becomes a drawer (ia_box/styles/responsive.css)
+   under 900px   the sidebar becomes a bar across the top
+   under 620px   the feed tools stack
+   ============================================================================= */
+
+@media (max-width: 1180px) {
+  .app {
+    grid-template-columns: 244px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .app {
+    display: block;
+  }
+
+  .app > aside {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 0 14px;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0 10px;
+  }
+
+  .logo {
+    padding: 10px 0;
+    flex: none;
+  }
+
+  .little_description,
+  .nav_title {
+    display: none;
+  }
+
+  nav {
+    order: 3;
+    width: 100%;
+    padding: 0;
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .nav_btn {
+    width: auto;
+    flex: none;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
+  .theme_btn {
+    width: auto;
+    margin: 0 0 0 auto;
+    padding: 8px 10px;
+  }
+
+  .llm_status {
+    width: auto;
+    padding: 8px 0 8px 10px;
+  }
+
+  main {
+    --main-gutter: 18px;
+    padding-bottom: 64px;
+  }
+}
+
+@media (max-width: 620px) {
+  main {
+    --main-gutter: 12px;
+  }
+
+  main > header {
+    padding-top: 10px;
+    gap: 10px;
+  }
+
+  .tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  #feed_search {
+    grid-column: 1 / -1;
+  }
+
+  #feed_category_filter {
+    grid-column: 1;
+  }
+
+  .tools .btn_primary {
+    grid-column: 2;
+  }
+
+  #llm_status_label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme_sun,
+  .theme_moon {
+    transition: none;
+  }
+
+  .theme_btn.is_switching .theme_icon svg,
+  .llm_status.is_checking .llm_status_dot,
+  .ia_summary_text.is_streaming::after {
+    animation: none;
+  }
+}

@@ -1,0 +1,181 @@
+/* =============================================================================
+   Feed: the list of article cards (feed/feed_card.js)
+   ============================================================================= */
+
+/* The list is a size container, so cards adapt to its width (see the end). */
+.feed_list {
+  container-type: inline-size;
+  display: grid;
+}
+
+
+/* Card */
+
+.feed_card {
+  padding: 20px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 8px 22px;
+  border-top: 1px solid var(--rule);
+}
+
+.feed_card:first-child {
+  padding-top: 2px;
+  border-top: 0;
+}
+
+/* Text on the left, picture on the right. */
+.feed_card:has(> .feed_card_image) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 208px);
+}
+
+.feed_card_image {
+  order: 2;
+  width: 100%;
+  height: 132px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--paper-inset);
+}
+
+.feed_card_content {
+  order: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+
+/* Card text */
+
+.feed_card_header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.feed_card_platform,
+.feed_card_category {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.feed_card_platform {
+  color: var(--ink);
+}
+
+.feed_card_category {
+  color: var(--ink-faint);
+}
+
+.feed_card_title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -.018em;
+}
+
+/* The first article reads as the headline. */
+.feed_card:first-child .feed_card_title {
+  font-size: 23px;
+}
+
+/* At most three lines of summary. */
+.feed_card_subtitle {
+  max-width: 74ch;
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+
+/* Card actions: Read and Summarize */
+
+.feed_card_actions {
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.feed_card_link {
+  padding-bottom: 1px;
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.feed_card_summarize {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  color: var(--ink-muted);
+  background: transparent;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.feed_card_summarize:hover,
+.feed_card_summarize.is_active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+
+/* YouTube cards: the video on the left, the text on the right */
+
+.feed_card.is_youtube {
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: 14px;
+  border-top: 0;
+}
+
+
+/* Narrow screens */
+
+@media (max-width: 620px) {
+  .feed_card:has(> .feed_card_image),
+  .feed_card.is_youtube {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .feed_card_image {
+    height: 168px;
+  }
+
+  .feed_card:first-child .feed_card_title {
+    font-size: 20px;
+  }
+}
+
+/* When the list itself is narrow (the AI panel takes room), video goes on top. */
+@container (max-width: 720px) {
+  .feed_card.is_youtube {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .feed_card_video {
+    max-width: 620px;
+  }
+}

@@ -1,0 +1,109 @@
+/* =============================================================================
+   Base: page defaults shared by every view
+   ============================================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font: 14px/1.55 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A faint paper grain over the whole page. It never captures clicks. */
+body::after {
+  content: "";
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  opacity: var(--paper-grain-opacity);
+  background-image: var(--paper-grain);
+  background-size: 160px 160px;
+  pointer-events: none;
+}
+
+h1,
+h2,
+h3,
+.logo_icon,
+.nav_label {
+  font-family: var(--font-display);
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent);
+}
+
+
+/* Keyboard focus */
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+
+/* Thin scrollbars for the sidebar and the AI panel */
+
+.app > aside,
+.app > aside nav,
+#ia_box {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.app > aside::-webkit-scrollbar,
+.app > aside nav::-webkit-scrollbar,
+#ia_box::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.app > aside::-webkit-scrollbar-track,
+.app > aside nav::-webkit-scrollbar-track,
+#ia_box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app > aside::-webkit-scrollbar-thumb,
+.app > aside nav::-webkit-scrollbar-thumb,
+#ia_box::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 0;
+  background: var(--scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+.app > aside::-webkit-scrollbar-thumb:hover,
+.app > aside nav::-webkit-scrollbar-thumb:hover,
+#ia_box::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+}

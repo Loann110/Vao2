@@ -4,44 +4,56 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Vao2</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="add_source/add_source.css">
-  <link rel="stylesheet" href="ia_box/ia_box.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Shared by every view -->
+  <link rel="stylesheet" href="global/styles/theme.css">
+  <link rel="stylesheet" href="global/styles/base.css">
+  <link rel="stylesheet" href="global/styles/layout.css">
+  <link rel="stylesheet" href="global/styles/controls.css">
+  <link rel="stylesheet" href="global/styles/responsive.css">
+
+  <!-- One folder per part of the interface -->
+  <link rel="stylesheet" href="feed/feed.css">
+  <link rel="stylesheet" href="feed/video_player.css">
+  <link rel="stylesheet" href="add_source/styles/setup.css">
+  <link rel="stylesheet" href="add_source/styles/results.css">
+  <link rel="stylesheet" href="add_source/styles/library.css">
+  <link rel="stylesheet" href="ia_box/styles/article.css">
+  <link rel="stylesheet" href="ia_box/styles/conversation.css">
+  <link rel="stylesheet" href="ia_box/styles/responsive.css">
   <link rel="stylesheet" href="weather/weather.css">
+  <link rel="stylesheet" href="reader/reader.css">
+
+  <script type="module" src="main.js"></script>
 </head>
 
 <body>
   <div class="app">
+    <!-- Sidebar: its entries are added by global/navigation.js -->
     <aside>
       <div class="logo">
         <b class="logo_icon">Vao2</b>
         <div class="little_description">Your <span>custom feed</span>, only for you</div>
       </div>
 
-      <!-- The sidebar navigation is handled by the JS script! -->
       <nav id="nav"></nav>
 
-      <button class="theme_btn" id="theme_button" type="button" onclick="toggleTheme()" aria-label="Switch to dark theme">
-        <span class="theme_icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <g class="theme_sun">
-              <circle cx="12" cy="12" r="3.5" fill="currentColor"/>
-              <path d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"
-                    fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </g>
-            <path class="theme_moon"
-                  d="M20.2 15.5A8.4 8.4 0 0 1 8.5 3.8 8.5 8.5 0 1 0 20.2 15.5Z"
-                  fill="currentColor"/>
-          </svg>
-        </span>
+      <button class="theme_btn" id="theme_button" type="button" aria-label="Switch to dark theme">
+        <span class="theme_icon" aria-hidden="true"></span>
         <span id="theme_label">Dark</span>
       </button>
+
       <div class="llm_status is_checking" id="llm_status" role="status">
         <span class="llm_status_dot" aria-hidden="true"></span>
         <span id="llm_status_label">Checking local model...</span>
       </div>
     </aside>
 
+    <!-- Main view: the feed, the Weather view, or the "Add source" view -->
     <main>
       <header>
         <div>
@@ -54,7 +66,7 @@
           <select id="feed_category_filter" class="input" aria-label="Filter by category">
             <option value="all">All categories</option>
           </select>
-          <button class="btn_primary" id="refresh_button" onclick="refreshFeed()">Refresh</button>
+          <button class="btn_primary" id="refresh_button" type="button">Refresh</button>
         </div>
       </header>
 
@@ -62,37 +74,13 @@
       <section id="content"></section>
       <section id="add_source_view" aria-label="Add a source" hidden></section>
     </main>
+
+    <!-- AI panel: filled by ia_box/ia_box.js -->
     <button id="ia_box_backdrop" type="button" aria-label="Close AI assistant" tabindex="-1"></button>
     <section id="ia_box" aria-live="polite" aria-label="AI assistant"></section>
+
+    <!-- Weather assistant: takes the AI panel's place in the Weather view (weather/weather_assistant.js) -->
+    <section id="wx_assistant_panel" aria-label="Weather assistant" hidden></section>
   </div>
-
-  <!-- This page is opened when the button "Add source" is clicked -->
-  <!-- This allows the user to add new sources to their feed -->
-  <div class="add_source" id="add_source_modal" role="dialog" aria-modal="true" aria-labelledby="add_source_title" aria-hidden="true">
-    <div class="add_source_content">
-      <h1 id="add_source_title">Add a source</h1>
-      <select id="source_type" onchange="updateSourcePlaceholder()">
-        <option value="news">Actualités</option>
-        <option value="youtube">YouTube</option>
-        <option value="github">GitHub</option>
-        <option value="rss">Flux RSS</option>
-        <option value="podcast">Podcast</option>
-      </select>
-
-    <!-- We need to adapt the placeholder to the source type with JS-->
-      <input id="source_input" class="input" placeholder="Enter the source URL..." />
-      <div class="add_source_buttons">
-        <button class="btn_primary" id="add_source_button" onclick="addSource()">Search</button>
-        <button class="btn_secondary" id="cancel_add_source_button" onclick="closeAddSource()">Cancel</button>
-      </div>
-      <div id="results" class="results"></div>
-    </div>
-  </div>
-
-  <script src="ui.js"></script>
-  <script src="app.js"></script>
-  <script src="ia_box/ia_box.js"></script>
-  <script src="weather/weather.js"></script>
-  <script src="add_source/add_source.js"></script>
 </body>
 </html>

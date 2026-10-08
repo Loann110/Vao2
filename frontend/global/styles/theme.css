@@ -1,0 +1,90 @@
+/* =============================================================================
+   Theme: every colour, size and font of the interface
+   -----------------------------------------------------------------------------
+   The base palette (--bg, --panel, --text, --accent...) is Vao2's identity.
+   The other colours are mixed from it, so the light and dark themes stay
+   coherent: switching theme only changes the base palette below.
+
+   The theme is chosen in global/theme.js (<html data-theme="dark">).
+   ============================================================================= */
+
+:root {
+  --font-body: "Roboto", Arial, sans-serif;
+  --font-display: "Google Sans", "Roboto", Arial, sans-serif;
+
+  /* Base palette */
+  --bg: #f3f3f3;
+  --panel: #ddcff4;
+  --soft: #efedff;
+  --text: #242424;
+  --muted: #686868;
+  --line: #e2e2e7;
+  --accent: #8b5cf6;
+  --danger: #c4314b;
+
+  /* Paper: the page, and light washes on it */
+  --paper: var(--bg);
+  --paper-tint: color-mix(in srgb, var(--panel) 12%, var(--bg));
+  --paper-inset: color-mix(in srgb, var(--text) 4%, var(--bg));
+
+  /* Ink: text, in three strengths */
+  --ink: var(--text);
+  --ink-muted: var(--muted);
+  --ink-faint: color-mix(in srgb, var(--muted) 94%, var(--bg));
+
+  /* Rules: thin separating lines */
+  --rule-soft: color-mix(in srgb, var(--text) 10%, var(--bg));
+  --rule: color-mix(in srgb, var(--text) 17%, var(--bg));
+  --rule-strong: color-mix(in srgb, var(--text) 34%, var(--bg));
+
+  /* Accent */
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, var(--bg));
+
+  /* Status lamps: always shown next to a word, never alone */
+  --signal-live: #15803d;
+  --signal-down: #c4314b;
+
+  /* Shapes */
+  --radius-flat: 0;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --control-h: 36px;
+  --control-line: color-mix(in srgb, var(--text) 22%, var(--bg));
+
+  /* Depth, only for panels drawn over the page */
+  --shadow-sheet: 0 12px 36px rgba(24, 20, 40, .14);
+
+  --ia-panel-width: 380px;
+
+  --scrollbar-thumb: color-mix(in srgb, var(--text) 26%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--text) 44%, transparent);
+
+  /* Paper grain: dark speckle on light paper */
+  --paper-grain-opacity: .025;
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] {
+  --bg: #121212;
+  --panel: #1e1f20;
+  --soft: #282a2c;
+  --text: #e3e3e3;
+  --muted: #a9aaad;
+  --line: #35373a;
+  --danger: #f2b8b5;
+
+  /* The washes keep a trace of violet on the dark paper. */
+  --paper-tint: color-mix(in srgb, var(--panel) 48%, var(--bg));
+  --paper-inset: color-mix(in srgb, var(--soft) 40%, var(--bg));
+
+  /* Dark paper leaves more room, so faint text can step further back. */
+  --ink-faint: color-mix(in srgb, var(--muted) 78%, var(--bg));
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  --signal-live: #4ade80;
+  --signal-down: #f2b8b5;
+  --shadow-sheet: 0 14px 38px rgba(0, 0, 0, .36);
+
+  /* Light speckle on dark paper */
+  --paper-grain-opacity: .03;
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' fill='%23ffffff'/%3E%3C/svg%3E");
+}

@@ -1,0 +1,376 @@
+/* =============================================================================
+   Layout: the three columns of the page
+   -----------------------------------------------------------------------------
+   sidebar (aside)  |  main view (main)  |  AI panel (#ia_box, ia_box/)
+   ============================================================================= */
+
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr) minmax(0, var(--ia-panel-width));
+}
+
+
+/* Sidebar */
+
+.app > aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--paper-tint);
+}
+
+
+/* Logo */
+
+.logo {
+  padding: 24px 20px 18px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.logo_icon {
+  color: var(--accent);
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+[data-theme="dark"] .logo_icon {
+  text-shadow: none;
+}
+
+/* The round dot after "Vao2". */
+.logo_icon::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: 4px;
+  display: inline-block;
+  border-radius: 99px;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  vertical-align: 3px;
+}
+
+.little_description {
+  width: 100%;
+  min-width: 0;
+  margin: 6px 0 0;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.little_description span {
+  color: var(--accent);
+}
+
+
+/* Navigation */
+
+nav {
+  min-height: 0;
+  padding: 6px 10px 16px;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.nav_title {
+  margin: 18px 10px 6px;
+  padding-bottom: 5px;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.nav_btn {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: transparent;
+  font-size: 13.5px;
+  text-align: left;
+  transition: background .15s ease, color .15s ease;
+}
+
+.nav_btn:hover {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.nav_btn.active {
+  background: var(--accent-soft);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* The bar on the left of the selected entry. */
+.nav_btn.active::before {
+  content: "";
+  width: 3px;
+  height: 18px;
+  margin-left: -8px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.nav_btn.add_source_btn {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.nav_label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Navigation icons */
+
+.icon {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.platform-logo {
+  display: block;
+  color: var(--ink-muted);
+  transition: color .16s ease, transform .16s ease;
+}
+
+.nav_btn:hover .platform-logo,
+.nav_btn.active .platform-logo {
+  transform: scale(1.06);
+}
+
+.platform-logo.home,
+.platform-logo.add {
+  color: var(--accent);
+}
+
+.platform-logo.youtube {
+  color: #ff0033;
+}
+
+.platform-logo.weather {
+  color: #38bdf8;
+}
+
+/* Theme button */
+
+.theme_btn {
+  width: 100%;
+  min-height: 36px;
+  margin-top: auto;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-flat);
+  color: var(--ink-muted);
+  background: transparent;
+  text-align: left;
+}
+
+.theme_btn:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+#theme_label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.theme_icon {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.theme_icon svg {
+  width: 18px;
+  height: 18px;
+  /* Both icons in the same spot. */
+  grid-area: 1 / 1;
+}
+
+/* The sun and the moon cross-fade when the theme changes. */
+.theme_sun,
+.theme_moon {
+  transform-origin: center;
+  transition: opacity .2s ease, transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+
+.theme_moon {
+  opacity: 0;
+  transform: rotate(-45deg) scale(.45);
+}
+
+[data-theme="dark"] .theme_sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(.45);
+}
+
+[data-theme="dark"] .theme_moon {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
+.theme_btn.is_switching .theme_icon svg {
+  animation: theme_spin .4s cubic-bezier(.2, .8, .2, 1);
+}
+
+@keyframes theme_spin {
+  50% {
+    transform: rotate(20deg) scale(.84);
+  }
+}
+
+
+/* Local model badge */
+
+.llm_status {
+  min-height: 32px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-muted);
+  font-size: 9.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .05em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  /* The model name is a long file name. */
+  overflow-wrap: anywhere;
+}
+
+.llm_status_dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+.llm_status.is_available .llm_status_dot {
+  background: var(--signal-live);
+}
+
+.llm_status.is_unavailable .llm_status_dot {
+  background: var(--signal-down);
+}
+
+.llm_status.is_checking .llm_status_dot {
+  animation: llm_status_pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes llm_status_pulse {
+  to {
+    opacity: .3;
+  }
+}
+
+
+/* Main view and its header */
+
+main {
+  /* Space on each side of the view; the header below spans over it. */
+  --main-gutter: 36px;
+
+  min-width: 0;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 0 var(--main-gutter) 80px;
+  align-self: start;
+}
+
+main > header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* Edge to edge, so nothing scrolling shows on its sides. */
+  margin: 0 calc(-1 * var(--main-gutter)) 14px;
+  padding: 12px var(--main-gutter) 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+  background: var(--paper);
+}
+
+#title {
+  margin: 0;
+  font-size: clamp(19px, 1.8vw, 23px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+
+.subtitle {
+  margin-top: 2px;
+  max-width: 52ch;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+
+/* Feed tools: search, category filter, refresh */
+
+.tools {
+  min-width: 0;
+  flex: 1 1 440px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr)) auto;
+  align-items: end;
+  gap: 6px;
+}
+
+.tools .input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Same height as the search field and the category menu next to it. */
+.tools .btn_primary {
+  min-width: max-content;
+  height: var(--control-h);
+}

@@ -1,0 +1,126 @@
+/* =============================================================================
+   Controls shared by every view: text fields, buttons, notices
+   ============================================================================= */
+
+/* Text fields and selects */
+
+.input {
+  min-width: 0;
+  height: var(--control-h);
+  padding: 0 10px;
+  border: 1px solid var(--control-line);
+  border-radius: var(--radius-xs);
+  outline: none;
+  color: var(--ink);
+  background: var(--paper-inset);
+  font-size: 13px;
+}
+
+.input::placeholder {
+  color: var(--ink-faint);
+}
+
+.input:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+
+/* Buttons */
+
+.btn_primary,
+.btn_secondary,
+.card_btn {
+  height: var(--control-h);
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  color: var(--ink);
+  background: var(--paper-inset);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .035em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn_primary {
+  color: #fff;
+  background: var(--accent);
+}
+
+.btn_primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn_primary:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.btn_secondary:hover,
+.card_btn:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Small buttons inside a list row. */
+.card_btn {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 10.5px;
+}
+
+.card_btn.btn_primary {
+  color: #fff;
+}
+
+.danger {
+  color: var(--danger);
+}
+
+.card_btn.danger:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+}
+
+
+/* Notice line above the feed ("Loading articles...") */
+
+.notice {
+  display: none;
+  margin: 0 0 18px;
+  padding: 9px 12px;
+  border-right: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  background: var(--accent-soft);
+  font-size: 12.5px;
+}
+
+.notice:not([hidden]):not(:empty) {
+  display: block;
+}
+
+
+/* Empty list message */
+
+.empty {
+  grid-column: 1 / -1;
+  padding: 46px 20px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  background: var(--paper-tint);
+  text-align: center;
+  font-size: 13px;
+}
+
+/* An empty feed: the notice above already says why. */
+#content.empty:empty {
+  display: none;
+}
